@@ -8,9 +8,14 @@ function format_num($number){
 $from = isset($_GET['from']) ? $_GET['from'] : date("Y-m-d",strtotime(date('Y-m-d')." -1 week"));
 $to = isset($_GET['to']) ? $_GET['to'] : date("Y-m-d");
 ?>
+<style>
+	th.p-0, td.p-0{
+		padding: 0 !important;
+	}
+</style>
 <div class="card card-outline card-primary">
 	<div class="card-header">
-		<h3 class="card-title">Trial Balance</h3>
+		<h3 class="card-title">Working Trial Balance</h3>
 		<div class="card-tools">
 		</div>
 	</div>
@@ -35,13 +40,8 @@ $to = isset($_GET['to']) ? $_GET['to'] : date("Y-m-d");
             </form>
         </div>
         <div class="container-fluid" id="outprint">
-        <style>
-            th.p-0, td.p-0{
-                padding: 0 !important;
-            }
-        </style>
             <h3 class="text-center"><b><?= $_settings->info('name') ?></b></h3>
-            <h4 class="text-center"><b>Trial Balance</b></h4>
+            <h4 class="text-center"><b>Working Trial Balance</b></h4>
             <?php if($from == $to): ?>
             <p class="m-0 text-center"><?= date("M d, Y" , strtotime($from)) ?></p>
             <?php else: ?>
@@ -49,70 +49,54 @@ $to = isset($_GET['to']) ? $_GET['to'] : date("Y-m-d");
             <?php endif; ?>
             <hr>
 			<table class="table table-hover table-bordered">
-                <colgroup>
-					<col width="20%">
-					<col width="20%">
-					<col width="60%">
-				</colgroup>
-				<thead>
-					<tr>
-						<th>Date</th>
-						<th>Journal Code</th>
-						<td class="p-0">
-							<div class="d-flex w-100">
-								<div class="col-6 border">Description</div>
-								<div class="col-3 border">Debit</div>
-								<div class="col-3 border">Credit</div>
-							</div>
-						</td>
-					</tr>
-				</thead>
+                <thead>
+                    <tr>
+                        <th class="text-center">Date</th>
+                        <th class="text-center">Product</th>
+                        <th class="text-center">Description</th>
+                        <th class="text-center">Amount</th>
+                    </tr>
+                </thead>
                 <tbody>
-                
-					<?php 
+                    <?php 
                     /*
-					$total_debit = 0;
-					$total_credit = 0;
-					$journals = $conn->query("SELECT * FROM `journal_entries` where date(journal_date) BETWEEN '{$from}' and '{$to}' order by date(journal_date) asc");
-					while($row = $journals->fetch_assoc()):
+                    $balance = 0;
+                    $journal = $conn->query("SELECT * FROM `journal_entries` where date(journal_date) BETWEEN '{$from}' and '{$to}'");
+                    $journal_arr = [];
+                    while($row = $journal->fetch_assoc()){
+                        $journal_arr[$row['id']] = $row;
+                    }
+                    $accounts = $conn->query("SELECT * FROM `account_list`  where id in (SELECT account_id FROM `journal_items` where journal_id in (SELECT id FROM `journal_entries` where date(journal_date) BETWEEN '{$from}' and '{$to}' ))");
+                    while($arow = $accounts->fetch_assoc()):
+                        $items = $conn->query("SELECT j.*,g.type FROM `journal_items` j inner join group_list g on j.group_id = g.id where j.account_id = '{$arow['id']}' and j.journal_id in (SELECT id FROM `journal_entries` where date(journal_date) BETWEEN '{$from}' and '{$to}' )");
+                    ?>
+                    <tr>
+                        <th colspan="4"><?= $arow['name'] ?></th>
+                    </tr>
+                    <?php 
+                    while($irow = $items->fetch_assoc()): 
+                        if($irow['type'] == 1)
+                            $balance += $irow['amount'];
+                        else    
+                            $balance -= $irow['amount'];
                     */
-					?>
-					<tr>
-						<td class="text-center"><?= date("M d, Y", strtotime($row['journal_date'])) ?></td>
-						<td class=""><?= $row['code'] ?></td>
-						<td class="p-0">
-							<div class="d-flex w-100">
-								<div class="col-6 border"><?= $row['description'] ?></div>
-								<div class="col-3 border"></div>
-								<div class="col-3 border"></div>
-							</div>
-							<?php 
-							$jitems = $conn->query("SELECT j.*,a.name as account, g.type as `type` FROM `journal_items` j inner join account_list a on j.account_id = a.id inner join group_list g on j.group_id = g.id where j.journal_id = '{$row['id']}'");
-							while($rowss = $jitems->fetch_assoc()):
-                                if($rowss['type'] == 1)
-                                    $total_debit += $rowss['amount'];
-                                else
-                                    $total_credit += $rowss['amount'];
-							?>
-							<div class="d-flex w-100">
-								<div class="col-6 border"><span class="pl-4"><?= $rowss['account'] ?></span></div>
-								<div class="col-3 border text-right"><?= $rowss['type'] == 1 ? format_num($rowss['amount']) : '' ?></div>
-								<div class="col-3 border text-right"><?= $rowss['type'] == 2 ? format_num($rowss['amount']) : '' ?></div>
-							</div>
-							<?php/* endwhile; ?>
-						</td>
-					</tr>
-					<?php endwhile; */?>
-				</tbody>
+                    ?>
+                        <tr>
+                            <!--
+                            <td><?= isset($journal_arr[$irow['journal_id']]) ? date("M d, Y",strtotime($journal_arr[$irow['journal_id']]['journal_date'])) : "" ?></td>
+                            <td><?= isset($journal_arr[$irow['journal_id']]) ? $journal_arr[$irow['journal_id']]['description'] : "" ?></td>
+                            <td><?= isset($journal_arr[$irow['journal_id']]) ? $journal_arr[$irow['journal_id']]['code'] : "" ?></td>
+                            <td class="text-right"><?= $irow['type'] == 1 ? format_num($irow['amount']) : '-'.(format_num($irow['amount']))  ?></td>
+                            -->
+                        </tr>
+                    <?php //endwhile; ?>
+				<?php //endwhile; ?>
+                </tbody>
                 <tfoot>
-                    <th colspan="2" class="text-center"></th>
-                    <th class="text-right p-0">
-                        <div class="d-flex w-100">
-                            <div class="col-6 border text-center">Total</span></div>
-                            <div class="col-3 border text-right"><?= format_num($total_debit) ?></div>
-                            <div class="col-3 border text-right"><?= format_num($total_credit) ?></div>
-                        </div>
-                    </th>
+                    <th colspan="3" class="text-center">Total</th>
+                    <!--
+                    <th class="text-right"><?= format_num($balance) ?></th>
+                    -->
                 </tfoot>
 			</table>
 		</div>
@@ -122,14 +106,17 @@ $to = isset($_GET['to']) ? $_GET['to'] : date("Y-m-d");
 	$(document).ready(function(){
         $('#filter').submit(function(e){
             e.preventDefault()
-            location.href="./?page=reports/trial_balance&"+$(this).serialize();
+            location.href="./?page=reports/stocks_monitor&"+$(this).serialize();
         })
+
+
+        
         $('#print').click(function(){
             start_loader()
             var _h = $('head').clone();
             var _p = $('#outprint').clone();
             var el = $('<div>')
-            _h.find('title').text('Trial Balance - Print View')
+            _h.find('title').text('Working Trial Balance - Print View')
             _h.append('<style>html,body{ min-height: unset !important;}</style>')
             el.append(_h)
             el.append(_p)

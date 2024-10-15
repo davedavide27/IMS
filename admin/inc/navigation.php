@@ -51,7 +51,7 @@
                     
                     <li class="nav-header">Products</li>
                     <li class="nav-item">
-                      <a href="<?php echo base_url ?>admin/?page=reports/working_trial_balance" class="nav-link text-light nav-reports_working_trial_balance">
+                      <a href="<?php echo base_url ?>admin/?page=reports/purchases" class="nav-link text-light nav-reports_purchases">
                         <i class="nav-icon fas fa-file"></i>
                         <p>
                           Purchase
@@ -59,7 +59,7 @@
                       </a>
                     </li>
                     <li class="nav-item">
-                      <a href="<?php echo base_url ?>admin/?page=reports/trial_balance" class="nav-link text-light nav-reports_trial_balance">
+                      <a href="<?php echo base_url ?>admin/?page=reports/stocks_monitor" class="nav-link text-light nav-reports_stocks_monitor">
                         <i class="nav-icon fas fa-file"></i>
                         <p>
                           Available Stocks

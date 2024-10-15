@@ -1,4 +1,5 @@
 <?php
+/*
 session_start(); // Start the session
 
 // Check if session variables are set

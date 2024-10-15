@@ -170,25 +170,45 @@ class Master extends DBConnection
 			return json_encode($resp);
 		}
 	
-		// Prepare SQL query to delete the entry
+		// Prepare SQL query to fetch product_id and quantity before deletion
 		$entry_code = $this->conn->real_escape_string($entry_code); // Prevent SQL injection
-		$sql = "DELETE FROM `inventory_entries` WHERE `entry_code` = '$entry_code'";
+		$fetch_sql = "SELECT `product_id`, `quantity` FROM `inventory_entries` WHERE `entry_code` = '$entry_code'";
+		$fetch_result = $this->conn->query($fetch_sql);
 	
-		// Execute the query
-		if ($this->conn->query($sql)) {
-			if ($this->conn->affected_rows > 0) { // Check if a row was deleted
-				$resp['status'] = 'success';
-				$resp['msg'] = "Inventory entry with entry code '{$entry_code}' has been successfully deleted.";
+		if ($fetch_result->num_rows > 0) {
+			$entry_data = $fetch_result->fetch_assoc();
+			$product_id = $entry_data['product_id'];
+			$quantity = $entry_data['quantity'];
+	
+			// Prepare SQL query to delete the entry
+			$sql = "DELETE FROM `inventory_entries` WHERE `entry_code` = '$entry_code'";
+	
+			// Execute the query
+			if ($this->conn->query($sql)) {
+				if ($this->conn->affected_rows > 0) {
+					// Update the stocks table by deducting the deleted quantity
+					$update_stock_sql = "UPDATE `stocks` SET `available_stocks` = `available_stocks` - $quantity WHERE `product_id` = '$product_id'";
+					if ($this->conn->query($update_stock_sql)) {
+						$resp['status'] = 'success';
+						$resp['msg'] = "Inventory entry with entry code '{$entry_code}' has been successfully deleted and stocks updated.";
+					} else {
+						$resp['msg'] = "Entry deleted, but an error occurred while updating the stocks.";
+						$resp['err'] = "Error: " . $this->conn->error;
+					}
+				} else {
+					$resp['msg'] = "No inventory entry found with entry code '{$entry_code}'.";
+				}
 			} else {
-				$resp['msg'] = "No inventory entry found with entry code '{$entry_code}'.";
+				$resp['msg'] = "An error occurred during the operation.";
+				$resp['err'] = "Error: " . $this->conn->error; // Log the SQL error for debugging
 			}
 		} else {
-			$resp['msg'] = "An error occurred during the operation.";
-			$resp['err'] = "Error: " . $this->conn->error; // Log the SQL error for debugging
+			$resp['msg'] = "No inventory entry found for the provided entry code.";
 		}
 	
 		return json_encode($resp);
 	}
+	
 	
 
 	public function get_inventory_entry($entry_code): array
