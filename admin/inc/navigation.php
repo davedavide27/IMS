@@ -27,7 +27,7 @@
                       <a href="./" class="nav-link text-light nav-home">
                         <i class="nav-icon fas fa-chart-bar"></i>
                         <p>
-                          Reports
+                          Dashboard
                         </p>
                       </a>
                     </li>
@@ -49,7 +49,7 @@
                       </a>    
                     </li>
                     
-                    <li class="nav-header">Products</li>
+                    <li class="nav-header">Reports</li>
                     <li class="nav-item">
                       <a href="<?php echo base_url ?>admin/?page=reports/purchases" class="nav-link text-light nav-reports_purchases">
                         <i class="nav-icon fas fa-chart-line"></i>
