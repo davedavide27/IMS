@@ -25,7 +25,7 @@
                    <ul class="nav nav-pills nav-sidebar flex-column text-sm nav-compact nav-flat nav-child-indent nav-collapse-hide-child text-dark" data-widget="treeview" role="menu" data-accordion="false">
                     <li class="nav-item dropdown">
                       <a href="./" class="nav-link text-light nav-home">
-                        <i class="nav-icon fas fa-tachometer-alt"></i>
+                        <i class="nav-icon fas fa-chart-bar"></i>
                         <p>
                           Reports
                         </p>
@@ -33,7 +33,7 @@
                     </li>
                     <li class="nav-item">
                       <a href="<?php echo base_url ?>admin/?page=inventory" class="nav-link text-light nav-inventory">
-                        <i class="nav-icon fas fa-book"></i>
+                        <i class="nav-icon fas fa-history"></i>
                         <p>
                           Inventory Entries
                         </p>
@@ -42,27 +42,27 @@
                     
                     <li class="nav-item">
                       <a href="<?php echo base_url ?>admin/?page=sales" class="nav-link text-light nav-sales">
-                        <i class="nav-icon fas fa-book"></i>
+                        <i class="nav-icon fas fa-shopping-bag"></i>
                         <p>
                           Sales Entries
                         </p>
-                      </a>
+                      </a>    
                     </li>
                     
                     <li class="nav-header">Products</li>
                     <li class="nav-item">
                       <a href="<?php echo base_url ?>admin/?page=reports/purchases" class="nav-link text-light nav-reports_purchases">
-                        <i class="nav-icon fas fa-file"></i>
+                        <i class="nav-icon fas fa-chart-line"></i>
                         <p>
                           Purchase
                         </p>
                       </a>
                     </li>
                     <li class="nav-item">
-                      <a href="<?php echo base_url ?>admin/?page=reports/stocks_monitor" class="nav-link text-light nav-reports_stocks_monitor">
-                        <i class="nav-icon fas fa-file"></i>
+                      <a href="<?php echo base_url ?>admin/?page=reports/total_sales" class="nav-link text-light nav-reports_total_sales">
+                        <i class="nav-icon fas fa-receipt"></i>
                         <p>
-                          Available Stocks
+                          Total Sales 
                         </p>
                       </a>
                     </li>
@@ -70,7 +70,7 @@
                     <li class="nav-header">Maintenance</li>
                     <li class="nav-item dropdown">
                       <a href="<?php echo base_url ?>admin/?page=products" class="nav-link text-light nav-products">
-                        <i class="nav-icon fas fa-th-list"></i>
+                        <i class="nav-icon fas fa-tags"></i>
                         <p>
                           Products
                         </p>
@@ -78,7 +78,7 @@
                     </li>
                     <li class="nav-item dropdown">
                       <a href="<?php echo base_url ?>admin/?page=stocks" class="nav-link text-light nav-stocks">
-                        <i class="nav-icon fas fa-table"></i>
+                        <i class="nav-icon fas fa-archive"></i>
                         <p>
                           Stocks
                         </p>

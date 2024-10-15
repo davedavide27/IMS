@@ -1,11 +1,11 @@
 -- phpMyAdmin SQL Dump
--- version 5.1.1
+-- version 5.2.0
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Feb 01, 2022 at 09:31 AM
--- Server version: 10.4.19-MariaDB
--- PHP Version: 8.0.7
+-- Generation Time: Oct 15, 2024 at 01:04 PM
+-- Server version: 10.4.27-MariaDB
+-- PHP Version: 8.2.0
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 START TRANSACTION;
@@ -24,155 +24,158 @@ SET time_zone = "+00:00";
 -- --------------------------------------------------------
 
 --
--- Table structure for table `account_list`
+-- Table structure for table `categories`
 --
 
-CREATE TABLE `account_list` (
+CREATE TABLE `categories` (
   `id` int(30) NOT NULL,
   `name` text NOT NULL,
-  `description` text NOT NULL,
-  `status` tinyint(1) NOT NULL DEFAULT 1,
-  `delete_flag` tinyint(1) NOT NULL DEFAULT 0,
-  `date_created` datetime NOT NULL DEFAULT current_timestamp(),
-  `date_updated` datetime DEFAULT NULL ON UPDATE current_timestamp()
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
---
--- Dumping data for table `account_list`
---
-
-INSERT INTO `account_list` (`id`, `name`, `description`, `status`, `delete_flag`, `date_created`, `date_updated`) VALUES
-(1, 'Cash', 'Cash', 1, 0, '2022-02-01 10:09:26', NULL),
-(2, 'Petty Cash', 'Petty Cash', 1, 0, '2022-02-01 10:09:40', NULL),
-(3, 'Cash Equivalents', 'Cash Equivalents', 1, 0, '2022-02-01 10:09:56', NULL),
-(4, 'Accounts Receivable', 'Accounts Receivable', 1, 0, '2022-02-01 10:10:22', NULL),
-(5, 'Interest Receivable', 'Interest Receivable', 1, 0, '2022-02-01 10:10:57', NULL),
-(6, 'Office Supplies', 'Office Supplies', 1, 0, '2022-02-01 10:11:13', NULL),
-(7, 'Accounts Payable', 'Accounts Payable', 1, 0, '2022-02-01 10:11:55', NULL),
-(8, 'Insurance Payable', 'Insurance Payable', 1, 0, '2022-02-01 10:12:07', NULL),
-(9, 'Interest Payable', 'Interest Payable', 1, 0, '2022-02-01 10:12:20', NULL),
-(10, 'Legal Fees Payable', 'Legal Fees Payable', 1, 0, '2022-02-01 10:12:35', NULL),
-(11, 'Office Salaries Payable', 'Office Salaries Payable', 1, 0, '2022-02-01 10:12:51', NULL),
-(12, 'Salaries Payable', 'Salaries Payable', 1, 0, '2022-02-01 10:13:03', NULL),
-(13, 'Wages Payable', 'Wages Payable', 1, 0, '2022-02-01 10:13:24', NULL),
-(14, 'Owner’s Capital', 'Owner’s Capital', 1, 0, '2022-02-01 10:13:54', NULL),
-(15, 'Owner’s Withdrawals', 'Owner’s Withdrawals', 1, 0, '2022-02-01 10:14:04', NULL),
-(16, 'Common Stock, Par Value', 'Common Stock, Par Value', 1, 0, '2022-02-01 10:14:25', NULL),
-(17, 'Common stock, no par value', 'Common stock, no par value', 1, 0, '2022-02-01 10:14:34', NULL),
-(18, 'Common stock dividend distributable', 'Common stock dividend distributable', 1, 0, '2022-02-01 10:14:50', NULL),
-(19, 'Paid-in capital in excess of par value, Common stock', 'Paid-in capital in excess of par value, Common\r\nstock', 1, 0, '2022-02-01 10:15:02', NULL),
-(20, 'Paid-in capital in excess of stated value, No-par common stock', 'Paid-in capital in excess of stated value, No-par\r\ncommon stock', 1, 0, '2022-02-01 10:15:11', NULL),
-(21, 'Retained earnings', 'Retained earnings', 1, 0, '2022-02-01 10:15:31', NULL),
-(22, 'Cash dividends', 'Cash dividends', 1, 0, '2022-02-01 10:15:44', NULL),
-(23, 'Stock dividends', 'Stock dividends', 1, 0, '2022-02-01 10:15:58', NULL),
-(24, 'Treasury stock, Common', 'Treasury stock, Common', 1, 0, '2022-02-01 10:16:48', NULL),
-(25, 'Unrealized gain-Equity', 'Unrealized gain-Equity', 1, 0, '2022-02-01 10:16:57', NULL),
-(26, 'Unrealized loss-Equity', 'Unrealized loss-Equity', 1, 0, '2022-02-01 10:17:05', NULL),
-(27, 'Fees earned from product one', 'Fees earned from product one', 1, 0, '2022-02-01 10:17:27', NULL),
-(28, 'Fees earned from product two', 'Fees earned from product two', 1, 0, '2022-02-01 10:17:43', NULL),
-(29, 'Service revenue one', 'Service revenue one', 1, 0, '2022-02-01 10:17:55', NULL),
-(30, 'Service revenue two', 'Service revenue two', 1, 0, '2022-02-01 10:18:04', NULL),
-(31, 'Commissions earned', 'Commissions earned', 1, 0, '2022-02-01 10:18:14', NULL),
-(32, 'Rent revenue', 'Rent revenue', 1, 0, '2022-02-01 10:18:26', NULL),
-(33, 'Dividends revenue', 'Dividends revenue', 1, 0, '2022-02-01 10:18:40', NULL),
-(34, 'Earnings from investments in “blank”', 'Earnings from investments in “blank”', 1, 0, '2022-02-01 10:18:51', NULL),
-(35, 'Interest revenue', 'Interest revenue', 1, 0, '2022-02-01 10:19:03', NULL),
-(36, 'Sinking fund earnings', 'Sinking fund earnings', 1, 0, '2022-02-01 11:41:57', NULL),
-(37, 'Amortization expense', 'Amortization expense', 1, 0, '2022-02-01 11:42:08', NULL),
-(38, 'Depletion expense', 'Depletion expense', 1, 0, '2022-02-01 11:42:16', NULL),
-(39, 'Depreciation expense-Automobiles', 'Depreciation expense-Automobiles', 1, 0, '2022-02-01 11:42:25', NULL),
-(40, 'Depreciation expense-Building', 'Depreciation expense-Building', 1, 0, '2022-02-01 11:42:34', NULL),
-(41, 'Depreciation expense-Furniture', 'Depreciation expense-Furniture', 1, 0, '2022-02-01 11:43:02', NULL),
-(42, 'Office salaries expense', 'Office salaries expense', 1, 0, '2022-02-01 11:43:12', NULL),
-(43, 'Sales salaries expense', 'Sales salaries expense', 1, 0, '2022-02-01 11:43:21', NULL),
-(44, 'Salaries expense', 'Salaries expense', 1, 0, '2022-02-01 11:43:31', NULL),
-(45, 'Income taxes expense', 'Income taxes expense', 1, 0, '2022-02-01 11:43:44', NULL),
-(46, 'Warranty expense', 'Warranty expense', 1, 0, '2022-02-01 11:44:01', NULL),
-(47, 'Utilities expense', 'Utilities expense', 1, 0, '2022-02-01 11:44:10', NULL),
-(48, 'Selling expense', 'Selling expense', 1, 0, '2022-02-01 11:44:23', NULL),
-(49, 'Sample101', 'Sample101', 0, 1, '2022-02-01 11:45:03', '2022-02-01 11:45:23');
+  `description` text DEFAULT NULL,
+  `delete_flag` tinyint(1) DEFAULT 0,
+  `date_created` datetime DEFAULT current_timestamp(),
+  `date_updated` datetime DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
 
 --
--- Table structure for table `group_list`
+-- Table structure for table `inventory_entries`
 --
 
-CREATE TABLE `group_list` (
+CREATE TABLE `inventory_entries` (
   `id` int(30) NOT NULL,
-  `name` text NOT NULL,
-  `description` text NOT NULL,
-  `type` tinyint(1) NOT NULL DEFAULT 1 COMMENT '1 = Debit, 2= Credit',
-  `status` tinyint(1) NOT NULL DEFAULT 1 COMMENT '0=Inactive, 1= Active',
-  `delete_flag` tinyint(1) NOT NULL DEFAULT 0 COMMENT '0 = No, 1 = Yes ',
-  `date_created` datetime NOT NULL DEFAULT current_timestamp(),
-  `date_updated` datetime DEFAULT NULL ON UPDATE current_timestamp()
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
---
--- Dumping data for table `group_list`
---
-
-INSERT INTO `group_list` (`id`, `name`, `description`, `type`, `status`, `delete_flag`, `date_created`, `date_updated`) VALUES
-(1, 'Assets', 'The cash, inventory, and other resources you owned.', 1, 1, 0, '2022-02-01 09:56:35', '2022-02-01 09:56:58'),
-(2, 'Revenue', 'Cash coming into your business through sales and other types of payments', 2, 1, 0, '2022-02-01 09:57:45', NULL),
-(3, 'Expenses', 'The amount you’re spending on services and other items, like payroll, utility bills, and fees for contractors.', 1, 1, 0, '2022-02-01 09:58:09', '2022-02-01 09:59:13'),
-(4, 'Liabilities', 'The money you still owe on loans, debts, and other obligations.', 2, 1, 0, '2022-02-01 09:58:34', NULL),
-(5, 'Equity', 'How much is remaining after you subtract liabilities from assets.', 2, 1, 0, '2022-02-01 09:59:05', NULL),
-(6, 'Dividend', 'Form of income that shareholders of corporations receive for each share of stock that they hold.', 1, 1, 0, '2022-02-01 10:00:13', NULL),
-(7, 'Sample101', 'Sample', 1, 0, 1, '2022-02-01 10:01:35', '2022-02-01 10:03:28');
-
--- --------------------------------------------------------
-
---
--- Table structure for table `journal_entries`
---
-
-CREATE TABLE `journal_entries` (
-  `id` int(30) NOT NULL,
-  `code` varchar(100) NOT NULL,
-  `journal_date` date NOT NULL,
-  `description` text NOT NULL,
+  `product_id` int(30) NOT NULL,
+  `entry_code` varchar(100) DEFAULT NULL,
+  `entry_date` date NOT NULL,
+  `description` text DEFAULT NULL,
   `user_id` int(30) DEFAULT NULL,
-  `date_created` datetime NOT NULL DEFAULT current_timestamp(),
-  `date_updated` datetime DEFAULT NULL ON UPDATE current_timestamp()
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+  `date_created` datetime DEFAULT current_timestamp(),
+  `date_updated` datetime DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  `quantity` int(11) NOT NULL DEFAULT 0
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
--- Dumping data for table `journal_entries`
+-- Dumping data for table `inventory_entries`
 --
 
-INSERT INTO `journal_entries` (`id`, `code`, `journal_date`, `description`, `user_id`, `date_created`, `date_updated`) VALUES
-(3, '202202-00001', '2022-02-01', 'Capital', 1, '2022-02-01 14:08:50', NULL),
-(4, '202202-00002', '2022-02-01', 'Sample', 1, '2022-02-01 15:55:46', NULL),
-(5, '202202-00003', '2022-02-01', 'Sample 102', 1, '2022-02-01 15:59:34', NULL);
+INSERT INTO `inventory_entries` (`id`, `product_id`, `entry_code`, `entry_date`, `description`, `user_id`, `date_created`, `date_updated`, `quantity`) VALUES
+(190, 1, '1', '2024-10-15', 'asda', 1, '2024-10-15 18:15:45', '2024-10-15 18:15:45', 12345),
+(191, 2, '2', '2024-10-15', 'aws', 1, '2024-10-15 18:15:52', '2024-10-15 18:15:52', 123),
+(192, 1, '3', '2024-10-15', 'as', 1, '2024-10-15 18:15:58', '2024-10-15 18:15:58', 453);
 
 -- --------------------------------------------------------
 
 --
--- Table structure for table `journal_items`
+-- Table structure for table `inventory_items`
 --
 
-CREATE TABLE `journal_items` (
-  `journal_id` int(30) NOT NULL,
-  `account_id` int(30) NOT NULL,
-  `group_id` int(30) NOT NULL,
-  `amount` float NOT NULL DEFAULT 0,
-  `date_created` datetime NOT NULL DEFAULT current_timestamp()
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+CREATE TABLE `inventory_items` (
+  `inventory_id` int(30) NOT NULL,
+  `product_id` int(30) NOT NULL,
+  `category_id` int(30) DEFAULT NULL,
+  `quantity` float NOT NULL,
+  `price` float DEFAULT NULL,
+  `date_created` datetime DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
 
 --
--- Dumping data for table `journal_items`
+-- Table structure for table `products`
 --
 
-INSERT INTO `journal_items` (`journal_id`, `account_id`, `group_id`, `amount`, `date_created`) VALUES
-(3, 1, 1, 15000, '2022-02-01 14:52:56'),
-(3, 14, 5, 15000, '2022-02-01 14:52:56'),
-(4, 42, 3, 5000, '2022-02-01 15:55:46'),
-(4, 11, 4, 5000, '2022-02-01 15:55:46'),
-(5, 31, 2, 5000, '2022-02-01 15:59:34'),
-(5, 31, 2, 3000, '2022-02-01 15:59:34'),
-(5, 4, 1, 8000, '2022-02-01 15:59:34');
+CREATE TABLE `products` (
+  `id` int(30) NOT NULL,
+  `name` text NOT NULL,
+  `description` text DEFAULT NULL,
+  `delete_flag` tinyint(1) DEFAULT 0,
+  `date_created` datetime DEFAULT current_timestamp(),
+  `date_updated` datetime DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  `purchase_price` decimal(10,2) NOT NULL DEFAULT 0.00,
+  `selling_price` decimal(10,2) NOT NULL DEFAULT 0.00
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `products`
+--
+
+INSERT INTO `products` (`id`, `name`, `description`, `delete_flag`, `date_created`, `date_updated`, `purchase_price`, `selling_price`) VALUES
+(1, 'Product A', 'High-quality product A with excellent features.', 0, '2024-10-08 16:07:29', '2024-10-10 15:54:09', '100.00', '150.00'),
+(2, 'Product B', 'Affordable product B suitable for everyday use.', 0, '2024-10-08 16:07:29', '2024-10-10 16:14:45', '50.00', '80.00'),
+(3, 'Product C', 'Premium product C designed for performance.', 0, '2024-10-08 16:07:29', '2024-10-10 16:14:43', '200.00', '250.00'),
+(4, 'Product D', 'Eco-friendly product D that helps save the planet.', 0, '2024-10-08 16:07:29', '2024-10-10 16:14:41', '30.00', '60.00'),
+(5, 'Product E', 'Stylish product E with innovative design.', 0, '2024-10-08 16:07:29', '2024-10-10 16:14:39', '120.00', '180.00'),
+(6, 'Product F', 'Durable product F built to last for years.', 0, '2024-10-08 16:07:29', '2024-10-10 16:14:35', '70.00', '100.00'),
+(7, 'Product G', 'High-quality Product G designed for durability.', 0, '2024-10-10 16:36:28', '2024-10-10 16:36:28', '15.00', '20.00'),
+(8, 'Product H', 'Affordable Product H for everyday use.', 0, '2024-10-10 16:36:28', '2024-10-10 16:36:28', '10.00', '15.00'),
+(9, 'Product I', 'Premium Product I with advanced features.', 0, '2024-10-10 16:36:28', '2024-10-10 16:36:28', '30.00', '40.00'),
+(10, 'Product J', 'Eco-friendly Product J made from recycled materials.', 0, '2024-10-10 16:36:28', '2024-10-10 16:42:14', '25.00', '32.00'),
+(11, 'Product K', 'Compact Product K for small spaces.', 0, '2024-10-10 16:36:28', '2024-10-10 16:36:28', '12.00', '18.00'),
+(12, 'Product L', 'Stylish Product L with modern design.', 0, '2024-10-10 16:36:28', '2024-10-10 16:36:28', '22.00', '28.00'),
+(13, 'Product M', 'Heavy-duty Product M built to last.', 0, '2024-10-10 16:36:28', '2024-10-10 16:36:28', '50.00', '60.00'),
+(14, 'Product N', 'Lightweight Product N for easy transport.', 0, '2024-10-10 16:36:28', '2024-10-10 16:36:28', '18.00', '25.00'),
+(15, 'Product O', 'Waterproof Product O for outdoor use.', 0, '2024-10-10 16:36:28', '2024-10-10 16:36:28', '35.00', '45.00'),
+(16, 'Product P', 'Energy-efficient Product P to reduce power consumption.', 0, '2024-10-10 16:36:28', '2024-10-10 16:36:28', '40.00', '52.00'),
+(17, 'Product Q', 'Innovative Product Q with smart technology.', 0, '2024-10-10 16:36:28', '2024-10-10 16:36:28', '60.00', '75.00'),
+(18, 'Product R', 'Multi-functional Product R for versatile use.', 0, '2024-10-10 16:36:28', '2024-10-10 16:36:28', '28.00', '35.00'),
+(19, 'Product S', 'Ergonomic Product S for user comfort.', 0, '2024-10-10 16:36:28', '2024-10-10 16:36:28', '20.00', '27.00'),
+(20, 'Product T', 'Compact and lightweight Product T.', 0, '2024-10-10 16:36:28', '2024-10-10 16:36:28', '14.00', '20.00'),
+(21, 'Product U', 'High-performance Product U for professionals.', 0, '2024-10-10 16:36:28', '2024-10-10 16:36:28', '55.00', '70.00'),
+(22, 'Product V', 'Eco-conscious Product V using sustainable materials.', 0, '2024-10-10 16:36:28', '2024-10-10 16:42:16', '32.00', '42.00'),
+(23, 'Inventory Management System', 'Hallow', 0, '2024-10-10 17:06:20', '2024-10-10 17:28:22', '2000.00', '3000.00'),
+(24, 'Inventory Management System', 'Ssytem ni', 0, '2024-10-10 17:07:18', '2024-10-10 17:28:46', '120000.00', '200000.00'),
+(25, 'Inventory Management System', 'System', 0, '2024-10-10 17:08:16', '2024-10-10 17:28:45', '20000.00', '40000.00'),
+(26, 'Inventory Management System', 'asd', 0, '2024-10-10 17:08:49', '2024-10-10 17:28:44', '300000.00', '400000.00'),
+(27, 'asdasdsa', 'asdasd', 0, '2024-10-10 17:09:44', '2024-10-10 17:28:42', '323.00', '242.00'),
+(28, 'Inventory Management System', 'asdasd', 1, '2024-10-10 17:11:14', '2024-10-15 08:13:22', '132.00', '1222.00'),
+(29, 'Inventory Management System', 'asd', 0, '2024-10-10 17:12:48', '2024-10-10 17:28:35', '30000.00', '40000.00'),
+(30, '3241', 'asdasdasd', 0, '2024-10-10 17:14:04', '2024-10-13 09:17:40', '32323.00', '424242.00'),
+(32, '4221', 'asdasdasd', 0, '2024-10-10 17:14:55', '2024-10-10 17:28:30', '345234.00', '242321.00'),
+(33, 'Product 1021', 'awawawaw', 0, '2024-10-10 17:15:13', '2024-10-13 08:49:23', '500.00', '1000.00'),
+(34, 'asasdasddas', 'dfsdfsdfgsdf', 0, '2024-10-10 17:15:53', '2024-10-10 17:28:26', '242.00', '1213.00'),
+(35, 'Pencil', 'Ohw Yeyh', 0, '2024-10-10 17:16:19', '2024-10-10 18:00:06', '30000.00', '40000.00'),
+(36, 'Product 0', 'dsfsdfsdfsdfddfsasadfdafadfsasdfadfdfaadfadfdfasfdfsdfdfadfdfasssssssssssssssssssssssssssssss', 0, '2024-10-10 17:25:09', '2024-10-10 17:25:09', '3000.00', '4000.00');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `sales`
+--
+
+CREATE TABLE `sales` (
+  `id` int(11) NOT NULL,
+  `purchase_date` date NOT NULL,
+  `product_id` int(11) NOT NULL,
+  `quantity` int(11) NOT NULL,
+  `selling_price` decimal(10,2) NOT NULL,
+  `user_id` int(11) NOT NULL,
+  `date_created` datetime DEFAULT current_timestamp(),
+  `date_updated` datetime DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  `sales_code` varchar(100) DEFAULT NULL,
+  `total_price` decimal(10,2) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `stocks`
+--
+
+CREATE TABLE `stocks` (
+  `id` int(30) NOT NULL,
+  `product_id` int(30) NOT NULL,
+  `available_stocks` int(30) NOT NULL,
+  `date_created` datetime DEFAULT current_timestamp(),
+  `date_updated` datetime DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `stocks`
+--
+
+INSERT INTO `stocks` (`id`, `product_id`, `available_stocks`, `date_created`, `date_updated`) VALUES
+(19, 1, 12798, '2024-10-15 18:15:45', '2024-10-15 18:44:20'),
+(20, 2, 123, '2024-10-15 18:15:52', '2024-10-15 18:44:17');
 
 -- --------------------------------------------------------
 
@@ -184,16 +187,16 @@ CREATE TABLE `system_info` (
   `id` int(30) NOT NULL,
   `meta_field` text NOT NULL,
   `meta_value` text NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `system_info`
 --
 
 INSERT INTO `system_info` (`id`, `meta_field`, `meta_value`) VALUES
-(1, 'name', 'Accounting Journal Management System'),
-(6, 'short_name', 'AJMS - PHP'),
-(11, 'logo', 'uploads/logo-1643680475.png'),
+(1, 'name', 'AnyCleaners Inventory System'),
+(6, 'short_name', 'AnyCleaners - IMS'),
+(11, 'logo', 'uploads/logo-1728989190.png'),
 (13, 'user_avatar', 'uploads/user_avatar.jpg'),
 (14, 'cover', 'uploads/cover-1643680511.png'),
 (15, 'content', 'Array'),
@@ -222,46 +225,62 @@ CREATE TABLE `users` (
   `status` int(1) NOT NULL DEFAULT 1 COMMENT '0=not verified, 1 = verified',
   `date_added` datetime NOT NULL DEFAULT current_timestamp(),
   `date_updated` datetime DEFAULT NULL ON UPDATE current_timestamp()
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `users`
 --
 
 INSERT INTO `users` (`id`, `firstname`, `middlename`, `lastname`, `username`, `password`, `avatar`, `last_login`, `type`, `status`, `date_added`, `date_updated`) VALUES
-(1, 'Adminstrator', NULL, 'Admin', 'admin', '0192023a7bbd73250516f069df18b500', 'uploads/avatar-1.png?v=1643703899', NULL, 1, 1, '2021-01-20 14:02:37', '2022-02-01 16:24:59'),
-(5, 'Claire', NULL, 'Blake', 'cblake', '4744ddea876b11dcb1d169fadf494418', 'uploads/avatar-5.png?v=1643704129', NULL, 2, 1, '2022-02-01 16:28:49', '2022-02-01 16:28:49');
+(1, 'Dave Noel', NULL, 'Davide', 'davedavide', '482c811da5d5b4bc6d497ffa98491e38', 'uploads/avatar-1.png?v=1728990142', NULL, 1, 1, '2021-01-20 14:02:37', '2024-10-15 19:02:22'),
+(2, 'Claire', NULL, 'Blake', 'cblake', '5f4dcc3b5aa765d61d8327deb882cf99', 'uploads/avatar-5.png?v=1643704129', NULL, 2, 1, '2022-02-01 16:28:49', '2024-10-08 19:57:18'),
+(7, 'Ryan', NULL, 'Carrilio', 'ryry', '5f4dcc3b5aa765d61d8327deb882cf99', 'uploads/avatar-7.png?v=1728990226', NULL, 2, 1, '2024-10-13 08:24:59', '2024-10-15 19:03:46');
 
 --
 -- Indexes for dumped tables
 --
 
 --
--- Indexes for table `account_list`
+-- Indexes for table `categories`
 --
-ALTER TABLE `account_list`
+ALTER TABLE `categories`
   ADD PRIMARY KEY (`id`);
 
 --
--- Indexes for table `group_list`
+-- Indexes for table `inventory_entries`
 --
-ALTER TABLE `group_list`
-  ADD PRIMARY KEY (`id`);
-
---
--- Indexes for table `journal_entries`
---
-ALTER TABLE `journal_entries`
+ALTER TABLE `inventory_entries`
   ADD PRIMARY KEY (`id`),
+  ADD KEY `product_id` (`product_id`);
+
+--
+-- Indexes for table `inventory_items`
+--
+ALTER TABLE `inventory_items`
+  ADD PRIMARY KEY (`inventory_id`,`product_id`),
+  ADD KEY `product_id` (`product_id`),
+  ADD KEY `category_id` (`category_id`);
+
+--
+-- Indexes for table `products`
+--
+ALTER TABLE `products`
+  ADD PRIMARY KEY (`id`);
+
+--
+-- Indexes for table `sales`
+--
+ALTER TABLE `sales`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `product_id` (`product_id`),
   ADD KEY `user_id` (`user_id`);
 
 --
--- Indexes for table `journal_items`
+-- Indexes for table `stocks`
 --
-ALTER TABLE `journal_items`
-  ADD KEY `journal_id` (`journal_id`),
-  ADD KEY `account_id` (`account_id`),
-  ADD KEY `group_id` (`group_id`);
+ALTER TABLE `stocks`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `product_id` (`product_id`);
 
 --
 -- Indexes for table `system_info`
@@ -280,22 +299,34 @@ ALTER TABLE `users`
 --
 
 --
--- AUTO_INCREMENT for table `account_list`
+-- AUTO_INCREMENT for table `categories`
 --
-ALTER TABLE `account_list`
-  MODIFY `id` int(30) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=50;
+ALTER TABLE `categories`
+  MODIFY `id` int(30) NOT NULL AUTO_INCREMENT;
 
 --
--- AUTO_INCREMENT for table `group_list`
+-- AUTO_INCREMENT for table `inventory_entries`
 --
-ALTER TABLE `group_list`
-  MODIFY `id` int(30) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
+ALTER TABLE `inventory_entries`
+  MODIFY `id` int(30) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=193;
 
 --
--- AUTO_INCREMENT for table `journal_entries`
+-- AUTO_INCREMENT for table `products`
 --
-ALTER TABLE `journal_entries`
-  MODIFY `id` int(30) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+ALTER TABLE `products`
+  MODIFY `id` int(30) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=37;
+
+--
+-- AUTO_INCREMENT for table `sales`
+--
+ALTER TABLE `sales`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=29;
+
+--
+-- AUTO_INCREMENT for table `stocks`
+--
+ALTER TABLE `stocks`
+  MODIFY `id` int(30) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=21;
 
 --
 -- AUTO_INCREMENT for table `system_info`
@@ -307,25 +338,38 @@ ALTER TABLE `system_info`
 -- AUTO_INCREMENT for table `users`
 --
 ALTER TABLE `users`
-  MODIFY `id` int(50) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+  MODIFY `id` int(50) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
 
 --
 -- Constraints for dumped tables
 --
 
 --
--- Constraints for table `journal_entries`
+-- Constraints for table `inventory_entries`
 --
-ALTER TABLE `journal_entries`
-  ADD CONSTRAINT `journal_entries_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL;
+ALTER TABLE `inventory_entries`
+  ADD CONSTRAINT `inventory_entries_ibfk_1` FOREIGN KEY (`product_id`) REFERENCES `products` (`id`) ON DELETE CASCADE;
 
 --
--- Constraints for table `journal_items`
+-- Constraints for table `inventory_items`
 --
-ALTER TABLE `journal_items`
-  ADD CONSTRAINT `journal_items_ibfk_1` FOREIGN KEY (`journal_id`) REFERENCES `journal_entries` (`id`) ON DELETE CASCADE,
-  ADD CONSTRAINT `journal_items_ibfk_2` FOREIGN KEY (`account_id`) REFERENCES `account_list` (`id`) ON DELETE CASCADE,
-  ADD CONSTRAINT `journal_items_ibfk_3` FOREIGN KEY (`group_id`) REFERENCES `group_list` (`id`) ON DELETE CASCADE;
+ALTER TABLE `inventory_items`
+  ADD CONSTRAINT `inventory_items_ibfk_1` FOREIGN KEY (`inventory_id`) REFERENCES `inventory_entries` (`id`),
+  ADD CONSTRAINT `inventory_items_ibfk_2` FOREIGN KEY (`product_id`) REFERENCES `products` (`id`),
+  ADD CONSTRAINT `inventory_items_ibfk_3` FOREIGN KEY (`category_id`) REFERENCES `categories` (`id`);
+
+--
+-- Constraints for table `sales`
+--
+ALTER TABLE `sales`
+  ADD CONSTRAINT `sales_ibfk_1` FOREIGN KEY (`product_id`) REFERENCES `products` (`id`),
+  ADD CONSTRAINT `sales_ibfk_2` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`);
+
+--
+-- Constraints for table `stocks`
+--
+ALTER TABLE `stocks`
+  ADD CONSTRAINT `stocks_ibfk_1` FOREIGN KEY (`product_id`) REFERENCES `products` (`id`) ON DELETE CASCADE;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

@@ -599,44 +599,52 @@ class Master extends DBConnection
 
 	public function delete_sale()
 	{
-		// Check if session is already started
 		if (session_status() === PHP_SESSION_NONE) {
-			session_start(); // Start session only if it's not already active
+			session_start(); // Start session if not already active
 		}
 	
-		// Initialize response
 		$resp = ['status' => 'failed', 'msg' => 'An unexpected error occurred.'];
-	
-		// Get the sale ID from the POST request
 		$sale_id = isset($_POST['id']) ? $_POST['id'] : null;
 	
-		// Ensure the sale ID is provided
 		if (is_null($sale_id)) {
 			$resp['msg'] = "Invalid sale ID.";
 			return json_encode($resp);
 		}
 	
-		// Prepare SQL query to delete the sale
+		// Retrieve the product_id and quantity from the sale
 		$sale_id = $this->conn->real_escape_string($sale_id); // Prevent SQL injection
-		$sql = "DELETE FROM `sales` WHERE `id` = '$sale_id'";
+		$sale = $this->conn->query("SELECT product_id, quantity FROM `sales` WHERE `id` = '$sale_id'")->fetch_assoc();
 	
-		// Execute the query
-		if ($this->conn->query($sql)) {
-			if ($this->conn->affected_rows > 0) { // Check if a row was deleted
-				$resp['status'] = 'success';
-				$resp['msg'] = "Sale entry with ID '{$sale_id}' has been successfully deleted.";
-		
+		if ($sale) {
+			$product_id = $sale['product_id'];
+			$quantity = $sale['quantity'];
+	
+			// Update the stocks table to add the quantity back
+			$update_stock = $this->conn->query("UPDATE `stocks` SET available_stocks = available_stocks + $quantity WHERE product_id = '$product_id'");
+	
+			if ($update_stock) {
+				// Proceed with deleting the sale entry
+				$sql = "DELETE FROM `sales` WHERE `id` = '$sale_id'";
+				if ($this->conn->query($sql)) {
+					if ($this->conn->affected_rows > 0) {
+						$resp['status'] = 'success';
+						$resp['msg'] = "Sale entry with ID '{$sale_id}' has been successfully deleted and stocks updated.";
+					} else {
+						$resp['msg'] = "No sale entry found with ID '{$sale_id}'.";
+					}
+				} else {
+					$resp['msg'] = "An error occurred during the deletion operation.";
+					$resp['err'] = "Error: " . $this->conn->error;
+				}
 			} else {
-				$resp['msg'] = "No sale entry found with ID '{$sale_id}'.";
+				$resp['msg'] = "Failed to update stocks.";
 			}
 		} else {
-			$resp['msg'] = "An error occurred during the operation.";
-			$resp['err'] = "Error: " . $this->conn->error; // Log the SQL error for debugging
+			$resp['msg'] = "Sale entry not found.";
 		}
 	
 		return json_encode($resp);
-	}
-	
+	}	
 }
 /*
 	function save_group()

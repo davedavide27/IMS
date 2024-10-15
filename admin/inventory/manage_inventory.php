@@ -118,12 +118,25 @@ $inventory_arr = json_encode($products);
             $('.pop-msg').remove();
             var el = $('<div>').addClass("pop-msg alert").hide();
 
+            // Validation for required fields
+            var entryDescription = $('#description').val();
+            var productId = $('#product_id').val();
+            var quantity = $('#quantity').val();
+
+            if (!entryDescription || !productId || !quantity) {
+                el.addClass("alert-danger").text("All fields are required.");
+                _this.prepend(el);
+                el.show('slow');
+                $('html,body,.modal').animate({
+                    scrollTop: 0
+                }, 'fast');
+                return; // Exit the function if validation fails
+            }
+
             start_loader();
 
             // Create FormData object
             var formData = new FormData($(this)[0]);
-            var productId = $('#product_id').val();
-            var quantity = $('#quantity').val();
 
             // Check if this product already exists in the inventory
             $.ajax({
@@ -139,7 +152,7 @@ $inventory_arr = json_encode($products);
                         formData.append('quantity', newQuantity); // Update quantity to be saved
 
                         $.ajax({
-                            url: _base_url_ + "classes/Master.php?f=update_inventory_entry", // Change this to your update endpoint
+                            url: _base_url_ + "classes/Master.php?f=update_inventory_entry",
                             data: formData,
                             cache: false,
                             contentType: false,
@@ -245,3 +258,4 @@ $inventory_arr = json_encode($products);
         }
     });
 </script>
+

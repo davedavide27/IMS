@@ -1,5 +1,6 @@
 <?php
-function format_num($number) {
+function format_num($number)
+{
     $decimals = 0;
     $num_ex = explode('.', $number);
     $decimals = isset($num_ex[1]) ? strlen($num_ex[1]) : 0;
@@ -24,33 +25,33 @@ $purchase_result = $purchase_stmt->get_result();
 $total_purchase = $purchase_result->fetch_assoc()['total_purchase'] ?? 0;
 
 // Calculate profit based on the date range
-$profit = ($total_purchase ?? 0) - ($total_sales ?? 0);
+$profit = ($total_sales ?? 0) - ($total_purchase ?? 0);
 ?>
 
 
 <!-- Date Range Filter Form -->
 
 
-    <div class="card-body">
-        <div class="callout border-primary shadow rounded-0">
-            <h4 class="text-muted">Filter Date</h4>
-            <form action="" method="post" id="filter">
-                <div class="row align-items-end">
-                    <div class="col-md-4 form-group">
-                        <label for="from" class="control-label">Date From</label>
-                        <input type="date" id="from" name="start_date" value="<?= htmlspecialchars($from) ?>" class="form-control form-control-sm rounded-0">
-                    </div>
-                    <div class="col-md-4 form-group">
-                        <label for="to" class="control-label">Date To</label>
-                        <input type="date" id="to" name="end_date" value="<?= htmlspecialchars($to) ?>" class="form-control form-control-sm rounded-0">
-                    </div>
-                    <div class="col-md-4 form-group">
-                        <button class="btn btn-default bg-gradient-navy btn-flat btn-sm" type="submit"><i class="fa fa-filter"></i> Filter</button>
-                    </div>
+<div class="card-body">
+    <div class="callout border-primary shadow rounded-0">
+        <h4 class="text-muted">Filter Date</h4>
+        <form action="" method="post" id="filter">
+            <div class="row align-items-end">
+                <div class="col-md-4 form-group">
+                    <label for="from" class="control-label">Date From</label>
+                    <input type="date" id="from" name="start_date" value="<?= htmlspecialchars($from) ?>" class="form-control form-control-sm rounded-0">
                 </div>
-            </form>
-        </div>
+                <div class="col-md-4 form-group">
+                    <label for="to" class="control-label">Date To</label>
+                    <input type="date" id="to" name="end_date" value="<?= htmlspecialchars($to) ?>" class="form-control form-control-sm rounded-0">
+                </div>
+                <div class="col-md-4 form-group">
+                    <button class="btn btn-default bg-gradient-navy btn-flat btn-sm" type="submit"><i class="fa fa-filter"></i> Filter</button>
+                </div>
+            </div>
+        </form>
     </div>
+</div>
 </div>
 
 <!-- CSS for banner -->
@@ -69,7 +70,7 @@ $profit = ($total_purchase ?? 0) - ($total_sales ?? 0);
 <div class="row">
     <div class="col-12 col-sm-12 col-md-6 col-lg-4">
         <div class="info-box bg-gradient-light shadow">
-            <span class="info-box-icon bg-gradient-navy elevation-1"><i class="fas fa-box"></i></span>
+            <span class="info-box-icon bg-gradient-navy elevation-1"><i class="fas fa-warehouse"></i></span>
             <div class="info-box-content">
                 <span class="info-box-text">Products</span>
                 <span class="info-box-number text-right">
@@ -81,7 +82,7 @@ $profit = ($total_purchase ?? 0) - ($total_sales ?? 0);
 
     <div class="col-12 col-sm-12 col-md-6 col-lg-4">
         <div class="info-box bg-gradient-light shadow">
-            <span class="info-box-icon bg-gradient-primary elevation-1"><i class="fas fa-th-list"></i></span>
+            <span class="info-box-icon bg-gradient-primary elevation-1"><i class="fas fa-file-invoice-dollar"></i></span>
             <div class="info-box-content">
                 <span class="info-box-text">Total Sales</span>
                 <span class="info-box-number text-right">
@@ -93,7 +94,7 @@ $profit = ($total_purchase ?? 0) - ($total_sales ?? 0);
 
     <div class="col-12 col-sm-12 col-md-6 col-lg-4">
         <div class="info-box bg-gradient-light shadow">
-            <span class="info-box-icon bg-gradient-info elevation-1"><i class="fas fa-clipboard-list"></i></span>
+            <span class="info-box-icon bg-gradient-info elevation-1"><i class="fas fa-shopping-cart"></i></span>
             <div class="info-box-content">
                 <span class="info-box-text">Inventory Entries</span>
                 <span class="info-box-number text-right">
@@ -117,15 +118,39 @@ $profit = ($total_purchase ?? 0) - ($total_sales ?? 0);
             </div>
         </div>
     </div>
+    <!-- Profit Box -->
+    <div class="col-12 col-sm-12 col-md-6 col-lg-4">
+        <div class="info-box bg-gradient-light shadow">
+            <span class="info-box-icon bg-gradient-warning elevation-1"><i class="fas fa-coins"></i></span>
+            <div class="info-box-content">
+                <span class="info-box-text">Profit</span>
+                <span class="info-box-number text-right">
+                    <?php
+                    if ($profit < 0) {
+                        echo "No profit";
+                    } else {
+                        echo '₱ ' . format_num($profit);
+                    }
+                    ?>
+                </span>
+            </div>
+        </div>
+    </div>
 
     <!-- Profit Box -->
     <div class="col-12 col-sm-12 col-md-6 col-lg-4">
         <div class="info-box bg-gradient-light shadow">
-            <span class="info-box-icon bg-gradient-warning elevation-1"><i class="fas fa-dollar-sign"></i></span>
+            <span class="info-box-icon bg-gradient-danger elevation-1"><i class="fas fa-money-bill-wave"></i></span>
             <div class="info-box-content">
-                <span class="info-box-text">Profit</span>
+                <span class="info-box-text">Deficit</span>
                 <span class="info-box-number text-right">
-                    <?php echo '₱ ' . format_num($profit); ?>
+                    <?php
+                    if ($profit < 0) {
+                        echo '₱ ' . format_num($profit);
+                    } else {
+                        echo "No deficit";
+                    }
+                    ?>
                 </span>
             </div>
         </div>

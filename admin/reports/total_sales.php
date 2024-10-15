@@ -29,6 +29,7 @@ $total_pages = ceil($total_records / $limit);
 // Initialize variables for totals
 $total_purchase = 0;
 $total_selling = 0;
+$total_sales = 0; // New variable for total sales
 
 $inventory = $conn->query("SELECT ie.entry_date, p.id AS product_id, p.name as product_name, ie.description, 
 p.purchase_price, p.selling_price, 
@@ -41,50 +42,68 @@ INNER JOIN stocks s ON ie.product_id = s.product_id
 WHERE ie.entry_date BETWEEN '{$from}' AND '{$to}'
 LIMIT $limit OFFSET $offset");
 
+// Fetch sales data based on the date range and pagination
+$sales_query = $conn->query("SELECT s.purchase_date, p.id AS product_id, p.name as product_name, 
+s.quantity, s.selling_price, 
+(s.selling_price * s.quantity) as total_sales,
+stk.available_stocks
+FROM sales s 
+INNER JOIN products p ON s.product_id = p.id 
+INNER JOIN stocks stk ON s.product_id = stk.product_id 
+WHERE s.purchase_date BETWEEN '{$from}' AND '{$to}' 
+LIMIT $limit OFFSET $offset");
+
+
+// Initialize variables for totals
+$total_quantity_sold = 0;
+$total_sales = 0;
+$sales_items = [];
+
 // Fetch data and calculate totals
-$inventory_items = [];
-while ($row = $inventory->fetch_assoc()) {
-    $total_purchase += $row['total_purchase'];
-    $total_selling += $row['total_selling'];
-    $inventory_items[] = $row; // Store each row
+while ($row = $sales_query->fetch_assoc()) {
+    $total_quantity_sold += $row['quantity'];
+    $total_sales += $row['total_sales'];
+    $sales_items[] = $row;
 }
-$inventory_items_json = json_encode($inventory_items);
+
+$sales_items_json = json_encode($sales_items);
 ?>
 
 <style>
-@media print {
-    .container {
-        width: 100%;
+    @media print {
+        .container {
+            width: 100%;
+        }
+
+        .row {
+            display: flex;
+            flex-direction: column;
+            /* Stack the columns vertically */
+        }
+
+        .col-md-4 {
+            width: 100%;
+            /* Full width for each column */
+            margin-bottom: 10px;
+        }
+
+        .bg-light {
+            border: 1px solid #000;
+            padding: 10px;
+            background-color: #f8f9fa;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th,
+        td {
+            border: 1px solid #000;
+            padding: 5px;
+        }
     }
-
-    .row {
-        display: flex;
-        flex-direction: column; /* Stack the columns vertically */
-    }
-
-    .col-md-4 {
-        width: 100%; /* Full width for each column */
-        margin-bottom: 10px;
-    }
-
-    .bg-light {
-        border: 1px solid #000;
-        padding: 10px;
-        background-color: #f8f9fa;
-    }
-
-    table {
-        width: 100%;
-        border-collapse: collapse;
-    }
-
-    th, td {
-        border: 1px solid #000;
-        padding: 5px;
-    }
-}
-
-
 
     th.p-0,
     td.p-0 {
@@ -94,7 +113,7 @@ $inventory_items_json = json_encode($inventory_items);
 
 <div class="card card-outline card-primary">
     <div class="card-header">
-        <h3 class="card-title">Total Purchase Reports</h3>
+        <h3 class="card-title">Total Sales Reports</h3>
     </div>
     <div class="card-body">
         <div class="callout border-primary shadow rounded-0">
@@ -122,109 +141,94 @@ $inventory_items_json = json_encode($inventory_items);
         </div>
         <div class="container-fluid" id="outprint">
             <h3 class="text-center"><b><?= $_settings->info('name') ?></b></h3>
-            <h4 class="text-center"><b>Total Purchase Reports</b></h4>
+            <h4 class="text-center"><b>Total Sales Reports</b></h4>
             <?php if ($from == $to): ?>
                 <p class="m-0 text-center"><?= date("M d, Y", strtotime($from)) ?></p>
             <?php else: ?>
                 <p class="m-0 text-center"><?= date("M d, Y", strtotime($from)) . ' - ' . date("M d, Y", strtotime($to)) ?></p>
             <?php endif; ?>
             <hr>
-            <div class="container mt-3" style="max-width: 80%;">
-                <div class="row">
-                    <div class="col-md-4">
-                        <div class="bg-light p-2 rounded shadow">
-                            <h5>Remaining Purchase</h5>
-                            <p class="text-right"><?= format_num($total_purchase) ?></p>
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="bg-light p-2 rounded shadow">
-                            <h5>Remaining Sales</h5>
-                            <p class="text-right"><?= format_num($total_selling) ?></p>
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="bg-light p-2 rounded shadow">
-                            <h5>Remaining Profit</h5>
-                            <p class="text-right"><?= format_num($total_selling - $total_purchase) ?></p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <br>
+
             <table class="table table-hover table-bordered" id="reportsTable">
                 <thead>
                     <tr>
                         <th class="text-center">Date</th>
                         <th class="text-center">Product</th>
-                        <th class="text-center">Description</th>
-                        <th class="text-center">Purchase Price</th>
-                        <th class="text-center">Quantity</th>
+                        <th class="text-center">Total Stocks Sold</th>
+                        <th class="text-center">Selling Price</th>
+                        <th class="text-center">Remaining Stocks</th> <!-- New column -->
+                        <th class="text-center">Sales</th>
                     </tr>
                 </thead>
                 <tbody>
-                    <?php
-                    foreach ($inventory_items as $row): // Fetching from array instead of database
-                    ?>
+                    <?php foreach ($sales_items as $row): ?>
                         <tr>
-                            <td><?= date("M d, Y", strtotime($row['entry_date'])) ?></td>
+                            <td><?= date("M d, Y", strtotime($row['purchase_date'])) ?></td>
                             <td><?= $row['product_name'] ?></td>
-                            <td><?= $row['description'] ?></td>
-                            <td class="text-right"><?= format_num($row['purchase_price']) ?></td>
                             <td class="text-right"><?= format_num($row['quantity']) ?></td>
+                            <td class="text-right"><?= format_num($row['selling_price']) ?></td>
+                            <td class="text-right"><?= format_num($row['available_stocks']) ?></td>
+                            <td class="text-right"><?= format_num($row['total_sales']) ?></td>
                         </tr>
                     <?php endforeach; ?>
                 </tbody>
+                <tfoot>
+                    <tr>
+                        <th colspan="5" class="text-center">Total Sales:</th>
+                        <th class="text-right"><?= format_num($total_sales) ?></th>
+
+                    </tr>
+                </tfoot>
             </table>
+
         </div>
     </div>
 </div>
 
 <script>
+    $(document).ready(function() {
+        $('#reportsTable').DataTable({
+            columnDefs: [{
+                orderable: false,
+                targets: [3] // Make specific columns non-orderable
+            }],
+            search: {
+                caseInsensitive: true // Case-insensitive search
+            }
+        });
 
-$(document).ready(function() {
-    $('#reportsTable').DataTable({
-        columnDefs: [{
-            orderable: false,
-            targets: [3, 4] // Make specific columns non-orderable
-        }],
-        search: {
-            caseInsensitive: true // Case-insensitive search
-        }
-    });
+        $('#filter').submit(function(e) {
+            e.preventDefault();
+            location.href = "./?page=reports/sales&" + $(this).serialize();
+        });
 
-    $('#filter').submit(function(e) {
-        e.preventDefault();
-        location.href = "./?page=reports/purchases&" + $(this).serialize();
-    });
+        $('#printButton').click(function() {
+            start_loader();
 
-    $('#printButton').click(function() {
-        start_loader();
+            var _h = $('head').clone();
+            var _p = $('#outprint').clone();
 
-        var _h = $('head').clone();
-        var _p = $('#outprint').clone();
+            // Remove DataTable controls (pagination, search, etc.)
+            _p.find('.dataTables_wrapper').find('.dataTables_filter, .dataTables_info, .dataTables_paginate, .dataTables_length').remove();
 
-        // Remove DataTable controls (pagination, search, etc.)
-        _p.find('.dataTables_wrapper').find('.dataTables_filter, .dataTables_info, .dataTables_paginate, .dataTables_length').remove();
-        
-        // Create a new element for printing
-        var el = $('<div>');
-        _h.find('title').text('Purchase Report - Print View');
-        _h.append('<style>html,body{ min-height: unset !important;}</style>');
-        el.append(_h);
-        el.append(_p);
+            // Create a new element for printing
+            var el = $('<div>');
+            _h.find('title').text('Sales Report - Print View');
+            _h.append('<style>html,body{ min-height: unset !important;}</style>');
+            el.append(_h);
+            el.append(_p);
 
-        var nw = window.open("", "_blank", "width=900,height=700,top=50,left=250");
-        nw.document.write(el.html());
-        nw.document.close();
+            var nw = window.open("", "_blank", "width=900,height=700,top=50,left=250");
+            nw.document.write(el.html());
+            nw.document.close();
 
-        setTimeout(() => {
-            nw.print();
             setTimeout(() => {
-                nw.close();
-                end_loader();
-            }, 1000);
-        }, 2000);
+                nw.print();
+                setTimeout(() => {
+                    nw.close();
+                    end_loader();
+                }, 1000);
+            }, 2000);
+        });
     });
-});
 </script>
