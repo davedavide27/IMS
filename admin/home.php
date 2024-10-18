@@ -148,7 +148,7 @@ $profit = ($total_sales ?? 0) - ($total_purchase ?? 0);
                     if ($profit < 0) {
                         echo '₱ ' . format_num($profit);
                     } else {
-                        echo "No deficit";
+                        echo "No Deficit";
                     }
                     ?>
                 </span>
