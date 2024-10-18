@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Oct 15, 2024 at 01:04 PM
+-- Generation Time: Oct 18, 2024 at 05:39 AM
 -- Server version: 10.4.27-MariaDB
 -- PHP Version: 8.2.0
 
@@ -60,8 +60,9 @@ CREATE TABLE `inventory_entries` (
 
 INSERT INTO `inventory_entries` (`id`, `product_id`, `entry_code`, `entry_date`, `description`, `user_id`, `date_created`, `date_updated`, `quantity`) VALUES
 (190, 1, '1', '2024-10-15', 'asda', 1, '2024-10-15 18:15:45', '2024-10-15 18:15:45', 12345),
-(191, 2, '2', '2024-10-15', 'aws', 1, '2024-10-15 18:15:52', '2024-10-15 18:15:52', 123),
-(192, 1, '3', '2024-10-15', 'as', 1, '2024-10-15 18:15:58', '2024-10-15 18:15:58', 453);
+(192, 1, '3', '2024-10-15', 'as', 1, '2024-10-15 18:15:58', '2024-10-15 18:15:58', 453),
+(193, 23, '4', '2024-10-15', 'asd', 1, '2024-10-15 19:28:35', '2024-10-15 19:28:35', 300),
+(194, 37, '5', '2024-10-15', 'gfhad', 1, '2024-10-15 19:30:20', '2024-10-15 19:30:20', 300);
 
 -- --------------------------------------------------------
 
@@ -127,14 +128,15 @@ INSERT INTO `products` (`id`, `name`, `description`, `delete_flag`, `date_create
 (25, 'Inventory Management System', 'System', 0, '2024-10-10 17:08:16', '2024-10-10 17:28:45', '20000.00', '40000.00'),
 (26, 'Inventory Management System', 'asd', 0, '2024-10-10 17:08:49', '2024-10-10 17:28:44', '300000.00', '400000.00'),
 (27, 'asdasdsa', 'asdasd', 0, '2024-10-10 17:09:44', '2024-10-10 17:28:42', '323.00', '242.00'),
-(28, 'Inventory Management System', 'asdasd', 1, '2024-10-10 17:11:14', '2024-10-15 08:13:22', '132.00', '1222.00'),
+(28, 'Inventory Management System', 'asdasd', 0, '2024-10-10 17:11:14', '2024-10-15 19:27:58', '132.00', '1222.00'),
 (29, 'Inventory Management System', 'asd', 0, '2024-10-10 17:12:48', '2024-10-10 17:28:35', '30000.00', '40000.00'),
 (30, '3241', 'asdasdasd', 0, '2024-10-10 17:14:04', '2024-10-13 09:17:40', '32323.00', '424242.00'),
 (32, '4221', 'asdasdasd', 0, '2024-10-10 17:14:55', '2024-10-10 17:28:30', '345234.00', '242321.00'),
 (33, 'Product 1021', 'awawawaw', 0, '2024-10-10 17:15:13', '2024-10-13 08:49:23', '500.00', '1000.00'),
 (34, 'asasdasddas', 'dfsdfsdfgsdf', 0, '2024-10-10 17:15:53', '2024-10-10 17:28:26', '242.00', '1213.00'),
 (35, 'Pencil', 'Ohw Yeyh', 0, '2024-10-10 17:16:19', '2024-10-10 18:00:06', '30000.00', '40000.00'),
-(36, 'Product 0', 'dsfsdfsdfsdfddfsasadfdafadfsasdfadfdfaadfadfdfasfdfsdfdfadfdfasssssssssssssssssssssssssssssss', 0, '2024-10-10 17:25:09', '2024-10-10 17:25:09', '3000.00', '4000.00');
+(36, 'Product 0', 'dsfsdfsdfsdfddfsasadfdafadfsasdfadfdfaadfadfdfasfdfsdfdfadfdfasssssssssssssssssssssssssssssss', 0, '2024-10-10 17:25:09', '2024-10-10 17:25:09', '3000.00', '4000.00'),
+(37, 'Expensive', 'Most expensive product', 0, '2024-10-15 19:29:15', '2024-10-15 19:29:47', '1000000.00', '4000000.00');
 
 -- --------------------------------------------------------
 
@@ -175,7 +177,9 @@ CREATE TABLE `stocks` (
 
 INSERT INTO `stocks` (`id`, `product_id`, `available_stocks`, `date_created`, `date_updated`) VALUES
 (19, 1, 12798, '2024-10-15 18:15:45', '2024-10-15 18:44:20'),
-(20, 2, 123, '2024-10-15 18:15:52', '2024-10-15 18:44:17');
+(20, 2, 0, '2024-10-15 18:15:52', '2024-10-15 19:28:10'),
+(21, 23, 300, '2024-10-15 19:28:35', '2024-10-15 19:28:35'),
+(22, 37, 300, '2024-10-15 19:30:20', '2024-10-15 19:30:20');
 
 -- --------------------------------------------------------
 
@@ -196,9 +200,9 @@ CREATE TABLE `system_info` (
 INSERT INTO `system_info` (`id`, `meta_field`, `meta_value`) VALUES
 (1, 'name', 'AnyCleaners Inventory System'),
 (6, 'short_name', 'AnyCleaners - IMS'),
-(11, 'logo', 'uploads/logo-1728989190.png'),
+(11, 'logo', 'uploads/logo-1729054030.png'),
 (13, 'user_avatar', 'uploads/user_avatar.jpg'),
-(14, 'cover', 'uploads/cover-1643680511.png'),
+(14, 'cover', 'uploads/cover-1729053895.png'),
 (15, 'content', 'Array'),
 (16, 'email', 'info@xyzcompany.com'),
 (17, 'contact', '09854698789 / 78945632'),
@@ -308,13 +312,13 @@ ALTER TABLE `categories`
 -- AUTO_INCREMENT for table `inventory_entries`
 --
 ALTER TABLE `inventory_entries`
-  MODIFY `id` int(30) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=193;
+  MODIFY `id` int(30) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=195;
 
 --
 -- AUTO_INCREMENT for table `products`
 --
 ALTER TABLE `products`
-  MODIFY `id` int(30) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=37;
+  MODIFY `id` int(30) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=38;
 
 --
 -- AUTO_INCREMENT for table `sales`
@@ -326,7 +330,7 @@ ALTER TABLE `sales`
 -- AUTO_INCREMENT for table `stocks`
 --
 ALTER TABLE `stocks`
-  MODIFY `id` int(30) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=21;
+  MODIFY `id` int(30) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=23;
 
 --
 -- AUTO_INCREMENT for table `system_info`
