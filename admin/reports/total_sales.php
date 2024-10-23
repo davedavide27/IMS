@@ -199,7 +199,7 @@ $sales_items_json = json_encode($sales_items);
 
         $('#filter').submit(function(e) {
             e.preventDefault();
-            location.href = "./?page=reports/sales&" + $(this).serialize();
+            location.href = "./?page=reports/total_sales&" + $(this).serialize();
         });
 
         $('#printButton').click(function() {
