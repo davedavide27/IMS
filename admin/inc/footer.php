@@ -61,7 +61,13 @@
         </strong>
         All rights reserved.
         <div class="float-right d-none d-sm-inline-block">
-          <b><?php echo $_settings->info('short_name') ?> (by: <a href="mailto:davedavide271@gmail.com" target="blank">Dave</a> )</b> Version 0
+        <b>
+    <?php echo $_settings->info('short_name'); ?> 
+    (by: <a href="mailto:<?php echo $_settings->info('email'); ?>" target="_blank">
+        <?php echo $_settings->info('company'); ?>
+    </a>) 
+</b> Version 0
+
         </div>
       </footer>
     </div>
