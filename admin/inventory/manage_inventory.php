@@ -5,6 +5,7 @@ require_once('./../../config.php');
 $entry_code = '';
 $entry_date = date("Y-m-d");
 $description = '';
+$remarks = ''; // Add remarks variable
 $product_id = '';
 $quantity = '';
 $purchase_price = '';
@@ -51,6 +52,7 @@ $inventory_arr = json_encode($products);
 ?>
 
 
+
 <div class="container-fluid">
     <form action="" id="inventory-form">
         <input type="hidden" name="id" value="<?= isset($id) ? $id : '' ?>"> <!-- Detect if editing -->
@@ -68,6 +70,12 @@ $inventory_arr = json_encode($products);
             <div class="col-md-12 form-group">
                 <label for="description" class="control-label">Entry Description</label>
                 <textarea rows="2" id="description" name="description" class="form-control form-control-sm rounded-0" required><?= isset($description) ? $description : "" ?></textarea>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-12 form-group">
+                <label for="remarks" class="control-label">Remarks</label> <!-- New label for remarks -->
+                <textarea rows="2" id="remarks" name="remarks" class="form-control form-control-sm rounded-0"><?= isset($remarks) ? $remarks : "" ?></textarea> <!-- New textarea for remarks -->
             </div>
         </div>
         <div class="row">

@@ -51,6 +51,12 @@ if (isset($_GET['id'])) {
             <p class=""><?= isset($description) ? $description : 'N/A' ?></p>
         </dd>
 
+        <!-- Description -->
+        <dt class="text-muted">Remarks</dt>
+        <dd class='pl-4'>
+            <p class=""><?= isset($remarks) ? $remarks : 'N/A' ?></p>
+        </dd>
+
         <!-- Quantity -->
         <dt class="text-muted">Quantity</dt>
         <dd class='pl-4'>

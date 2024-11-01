@@ -10,6 +10,7 @@ $quantity = '';
 $purchase_price = '';
 $selling_price = '';
 $product_name = '';
+$remarks = '';
 
 if (isset($_GET['entry_code'])) {
     // Use entry_code to fetch the record for editing
@@ -68,6 +69,12 @@ $inventory_arr = json_encode($products);
             <div class="col-md-12 form-group">
                 <label for="description" class="control-label">Entry Description</label>
                 <textarea rows="2" id="description" name="description" class="form-control form-control-sm rounded-0" required><?= isset($description) ? $description : "" ?></textarea>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-12 form-group">
+                <label for="remarks" class="control-label">Remarks</label>
+                <textarea rows="2" id="remarks" name="remarks" class="form-control form-control-sm rounded-0" required><?= isset($remarks) ? $remarks : "" ?></textarea>
             </div>
         </div>
         <div class="row">

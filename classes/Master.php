@@ -44,6 +44,7 @@ class Master extends DBConnection
 		$entry_code = isset($_POST['entry_code']) ? $this->conn->real_escape_string($_POST['entry_code']) : null;
 		$entry_date = isset($_POST['entry_date']) ? $this->conn->real_escape_string($_POST['entry_date']) : null;
 		$description = isset($_POST['description']) ? $this->conn->real_escape_string($_POST['description']) : null;
+		$remarks = isset($_POST['remarks']) ? $this->conn->real_escape_string($_POST['remarks']) : null;
 	
 		// Ensure all required fields are provided
 		if (empty($product_id) || is_null($quantity) || empty($entry_date) || empty($entry_code)) {
@@ -85,7 +86,8 @@ class Master extends DBConnection
 			'description' => $description,
 			'quantity' => $quantity,
 			'user_id' => $user_id,
-			'product_id' => $product_id
+			'product_id' => $product_id,
+			'remarks' => $remarks
 		];
 	
 		// Insert new entry
@@ -261,6 +263,7 @@ class Master extends DBConnection
 		$description = isset($_POST['description']) ? $this->conn->real_escape_string($_POST['description']) : null;
 		$product_id = isset($_POST['product_id']) ? $this->conn->real_escape_string($_POST['product_id']) : null;
 		$quantity = isset($_POST['quantity']) ? (float)$this->conn->real_escape_string($_POST['quantity']) : null;
+		$remarks = isset($_POST['remarks']) ? $this->conn->real_escape_string($_POST['remarks']) : null;
 	
 		// Ensure all required fields are provided
 		if (empty($entry_date) || empty($description) || empty($product_id) || is_null($quantity)) {
@@ -306,6 +309,7 @@ class Master extends DBConnection
 		$update_entry_stmt = $this->conn->prepare("UPDATE `inventory_entries` SET 
 			`entry_date` = ?, 
 			`description` = ?, 
+			`remarks` = ?,
 			`product_id` = ?, 
 			`quantity` = ?, 
 			`date_updated` = CURRENT_TIMESTAMP 
@@ -317,7 +321,7 @@ class Master extends DBConnection
 		}
 	
 		// Bind parameters to the prepared statement
-		$update_entry_stmt->bind_param("ssisi", $entry_date, $description, $product_id, $quantity, $entry_code);
+		$update_entry_stmt->bind_param("sssisi", $entry_date, $description,$remarks, $product_id, $quantity, $entry_code);
 	
 		// Execute the update for `inventory_entries`
 		$update_entry_success = $update_entry_stmt->execute();

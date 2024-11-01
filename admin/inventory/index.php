@@ -24,26 +24,27 @@ function format_num($number)
         <div class="container-fluid">
             <table class="table table-hover table-striped table-bordered" id="inventoryTable">
                 <colgroup>
-                    <col width="10%"> <!-- Date column, slightly reduced -->
-                    <col width="10%"> <!-- Entry Code column, slightly reduced -->
-                    <col width="7%"> <!-- Product column, expanded to fit previous layout -->
-                    <col width="10%"> <!-- Description column, expanded to fit previous layout -->
+                    <col width="10%"> <!-- Date column -->
+                    <col width="7%"> <!-- Entry Code column -->
+                    <col width="7%"> <!-- Product column -->
+                    <col width="9%"> <!-- Description column -->
                     <col width="6%"> <!-- Quantity column -->
                     <col width="10%"> <!-- Total Price column -->
-                    
+                    <col width="7%"> <!-- Remarks column -->
                 </colgroup>
                 <thead>
                     <tr>
                         <th>Date</th>
                         <th>Entry Code</th>
-                        <th>Product</th> <!-- Added Product column in the header -->
+                        <th>Product</th>
                         <th class="p-0">
                             <div class="d-flex w-100">
                                 <div class="col-5 border">Description</div>
-                                <div class="col-3 border">Quantity</div>
-                                <div class="col-4 border">Total Price</div> <!-- Updated column header -->
+                                <div class="col-4 border">Quantity</div>
+                                <div class="col-3 border">Total Price</div>
                             </div>
                         </th>
+                        <th>Remarks</th> <!-- Added Remarks column in header -->
                         <th>Recorded By</th>
                         <th>Action</th>
                     </tr>
@@ -57,25 +58,26 @@ function format_num($number)
                     $users = $conn->query("SELECT id, username FROM `users` WHERE id IN (SELECT `user_id` FROM `inventory_entries` {$swhere})");
                     $user_arr = array_column($users->fetch_all(MYSQLI_ASSOC), 'username', 'id');
 
-                    // Fetch the necessary fields including product_id
-                    $inventory = $conn->query("SELECT id, entry_date, entry_code, description, quantity, user_id, product_id FROM `inventory_entries` {$swhere} ORDER BY date(entry_date) ASC");
+                    // Fetch the necessary fields including product_id and remarks
+                    $inventory = $conn->query("SELECT id, entry_date, entry_code, description, quantity, remarks, user_id, product_id FROM `inventory_entries` {$swhere} ORDER BY date(entry_date) ASC");
                     
                     while ($row = $inventory->fetch_assoc()):
                         // Fetch product details including purchase price
                         $product = $conn->query("SELECT name, purchase_price FROM products WHERE id = '{$row['product_id']}'")->fetch_assoc();
-                        $total_price = $row['quantity'] * $product['purchase_price']; // Calculate total price using purchase price
+                        $total_price = $row['quantity'] * $product['purchase_price'];
                     ?>
                         <tr>
                             <td class="text-center"><?= date("M d, Y", strtotime($row['entry_date'])) ?></td>
                             <td class=""><?= htmlspecialchars($row['entry_code'], ENT_QUOTES) ?></td>
-                            <td class=""><?= htmlspecialchars($product['name'], ENT_QUOTES) ?></td> <!-- Display product name -->
+                            <td class=""><?= htmlspecialchars($product['name'], ENT_QUOTES) ?></td>
                             <td class="p-0">
                                 <div class="d-flex w-100">
                                     <div class="col-5 border"><?= htmlspecialchars($row['description'], ENT_QUOTES) ?></div>
-                                    <div class="col-3 border text-right"><?= format_num($row['quantity']) ?></div>
-                                    <div class="col-4 border text-right"><?= format_num($total_price) ?></div> <!-- Display total price -->
+                                    <div class="col-4 border text-right"><?= format_num($row['quantity']) ?></div>
+                                    <div class="col-3 border text-right"><?= format_num($total_price) ?></div>
                                 </div>
                             </td>
+                            <td><?= htmlspecialchars($row['remarks'], ENT_QUOTES) ?></td> <!-- Display remarks -->
                             <td><?= isset($user_arr[$row['user_id']]) ? $user_arr[$row['user_id']] : "N/A" ?></td>
                             <td class="text-center">
                                 <button type="button" class="btn btn-flat btn-default btn-sm dropdown-toggle dropdown-icon" data-toggle="dropdown">
@@ -83,7 +85,7 @@ function format_num($number)
                                     <span class="sr-only">Toggle Dropdown</span>
                                 </button>
                                 <div class="dropdown-menu" role="menu">
-                                <a class="dropdown-item view_data" href="javascript:void(0)" data-id ="<?php echo $row['id'] ?>">
+                                    <a class="dropdown-item view_data" href="javascript:void(0)" data-id ="<?php echo $row['id'] ?>">
                                         <span class="fa fa-eye text-dark"></span> View
                                     </a>
                                     <div class="dropdown-divider"></div>
@@ -103,6 +105,7 @@ function format_num($number)
         </div>
     </div>
 </div>
+
 
 <script>
     $(document).ready(function() {
