@@ -10,6 +10,15 @@ function format_num($number)
 $from = isset($_GET['from']) ? $_GET['from'] : date("Y-m-d", strtotime(date('Y-m-d') . " -1 month"));
 $to = isset($_GET['to']) ? $_GET['to'] : date("Y-m-d");
 
+// Filter to fetch all products (not limited by date)
+$product_query = $conn->query("SELECT DISTINCT p.id, p.name FROM products p
+    ORDER BY p.name ASC");
+
+$products = [];
+while ($product_row = $product_query->fetch_assoc()) {
+    $products[] = $product_row;
+}
+
 $limit = 10; // Number of records per page
 $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
 if ($page < 1) {
@@ -112,6 +121,7 @@ $sales_items_json = json_encode($sales_items);
 </style>
 
 <div class="card card-outline card-primary">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
     <div class="card-header">
         <h3 class="card-title">Total Sales Reports</h3>
     </div>
@@ -129,11 +139,25 @@ $sales_items_json = json_encode($sales_items);
                         <input type="date" id="to" name="to" value="<?= $to ?>" class="form-control form-control-sm rounded-0">
                     </div>
                     <div class="col-md-4 form-group">
+                        <label for="product_id" class="control-label">Product</label>
+                        <select id="product_id" name="product_id" class="form-control form-control-sm rounded-0 select2" style="width: 40%;">
+                            <option value="" disabled selected>All Products</option>
+                            <?php foreach ($products as $product): ?>
+                                <option value="<?= $product['id'] ?>" <?= (isset($product_id) && $product['id'] == $product_id) ? 'selected' : '' ?>>
+                                    <?= htmlspecialchars($product['name'], ENT_QUOTES) ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <div class="col-md-4 form-group">
                         <button class="btn btn-default bg-gradient-navy btn-flat btn-sm" type="submit">
                             <i class="fa fa-filter"></i> Filter
                         </button>
                         <button class="btn btn-default border btn-flat btn-sm" id="printButton" type="button">
                             <i class="fa fa-print"></i> Print
+                        </button>
+                        <button class="btn btn-primary border btn-flat btn-sm" id="exportExcelButton" type="button">
+                            <i class="fa fa-file-excel"></i> Export to Excel
                         </button>
                     </div>
                 </div>
@@ -201,6 +225,13 @@ $sales_items_json = json_encode($sales_items);
             e.preventDefault();
             location.href = "./?page=reports/total_sales&" + $(this).serialize();
         });
+        $(document).ready(function() {
+            // Initialize Select2 for the product dropdown with search capability
+            $('#product_id').select2({
+                placeholder: "All Products",
+                allowClear: true
+            });
+        });
 
         $('#printButton').click(function() {
             start_loader();
@@ -230,5 +261,52 @@ $sales_items_json = json_encode($sales_items);
                 }, 1000);
             }, 2000);
         });
+        
+        $('#exportExcelButton').click(function() {
+            exportTableToExcel('reportsTable', 'Purchase_Report');
+        });
+
+        function exportTableToExcel(tableID, filename = '') {
+            // Get the table element
+            var table = document.getElementById(tableID);
+            var data = [];
+
+            // Add the header row
+            var headerRow = [];
+            var headers = table.rows[0].cells; // Assuming the first row is the header
+            for (var i = 0; i < headers.length; i++) {
+                headerRow.push(headers[i].innerText);
+            }
+            data.push(headerRow); // Add header row to the data array
+
+            // Loop through each row in the table (starting from the second row)
+            for (var i = 1; i < table.rows.length; i++) {
+                var rowData = [];
+                var row = table.rows[i];
+                // Loop through each cell in the row
+                for (var j = 0; j < row.cells.length; j++) {
+                    rowData.push(row.cells[j].innerText);
+                }
+                data.push(rowData); // Add each row to the data array
+            }
+
+            // Create a new workbook and add the data as a worksheet
+            var wb = XLSX.utils.book_new();
+            var ws = XLSX.utils.aoa_to_sheet(data);
+
+            // Set column widths based on the header content
+            var columnWidths = headerRow.map(header => ({
+                wch: header.length + 5
+            }));
+            ws['!cols'] = columnWidths;
+
+            XLSX.utils.book_append_sheet(wb, ws, "Sheet1");
+
+            // Specify the filename
+            filename = filename ? filename + '.xlsx' : 'excel_data.xlsx';
+
+            // Write the workbook and trigger download
+            XLSX.writeFile(wb, filename);
+        }
     });
 </script>

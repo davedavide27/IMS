@@ -1,5 +1,6 @@
 <?php
 require_once('../../config.php');
+
 if (isset($_GET['id'])) {
     $qry = $conn->query("SELECT * FROM `products` WHERE id = '{$_GET['id']}'");
     if ($qry->num_rows > 0) {
@@ -11,7 +12,7 @@ if (isset($_GET['id'])) {
 }
 ?>
 <div class="container-fluid">
-    <form action="" id="product-form">
+<form id="product-form" action="" method="POST"> <!-- Action is left empty to prevent redirection -->
         <input type="hidden" name="id" value="<?php echo isset($id) ? $id : '' ?>">
         <input type="hidden" name="delete_flag" id="delete_flag" value="<?php echo isset($delete_flag) ? $delete_flag : 0; ?>">
 
@@ -55,62 +56,72 @@ if (isset($_GET['id'])) {
             <input type="text" name="date_updated" id="date_updated" class="form-control form-control-border" value="<?php echo isset($date_updated) ? date("M d, Y g:i A", strtotime($date_updated)) : ''; ?>" readonly>
         </div>
 
-        <button class="btn btn-default bg-gradient-navy btn-flat btn-sm" id="save_entry" type="button"><i class="fa fa-save"></i> Save Entry</button>
-    </form>
-</div>
 
-<script>
-    $(function() {
-        // Highlight selected status button
-        var deleteFlag = $('#delete_flag').val();
+        <script>
+$(function() {
+    // Highlight selected status button
+    $('#active-btn').click(function() {
+        $('#delete_flag').val(0);
+        $('#active-btn').removeClass('btn-light').addClass('btn-primary');
+        $('#inactive-btn').removeClass('btn-danger').addClass('btn-light');
+    });
 
-        $('#active-btn').click(function() {
-            $('#delete_flag').val(0);
-            $('#active-btn').removeClass('btn-light').addClass('btn-primary');
-            $('#inactive-btn').removeClass('btn-danger').addClass('btn-light');
-        });
+    $('#inactive-btn').click(function() {
+        $('#delete_flag').val(1);
+        $('#inactive-btn').removeClass('btn-light').addClass('btn-danger');
+        $('#active-btn').removeClass('btn-primary').addClass('btn-light');
+    });
 
-        $('#inactive-btn').click(function() {
-            $('#delete_flag').val(1);
-            $('#inactive-btn').removeClass('btn-light').addClass('btn-danger');
-            $('#active-btn').removeClass('btn-primary').addClass('btn-light');
-        });
-
-        // Save form
-        $('#save_entry').click(function() {
-            $('.pop-msg').remove();
-            var _this = $('#product-form');
-            var el = $('<div>');
-            el.addClass("pop-msg alert").hide();
-            start_loader();
-            $.ajax({
-                url: _base_url_ + "classes/Master.php?f=edit_product",
-                data: new FormData(_this[0]),
-                cache: false,
-                contentType: false,
-                processData: false,
-                method: 'POST',
-                dataType: 'json',
-                error: err => {
-                    console.log(err);
-                    alert_toast("An error occurred.", 'error');
-                    end_loader();
-                },
-                success: function(resp) {
-                    if (typeof resp === 'object' && resp.status === 'success') {
-                        alert_toast(resp.msg, 'success');  // Display the success message from the response
-                        setTimeout(function() {
-                            location.reload();  // Reload the page after a short delay
-                        }, 2000);  // Delay of 2 seconds before reloading the page
-                    } else {
-                        el.addClass("alert-danger").text(resp.msg || "An error occurred due to an unknown reason.");
-                        _this.prepend(el);
-                        el.show('slow');
-                        $('html,body,.modal').animate({ scrollTop: 0 }, 'fast');
-                    }
-                    end_loader();
+    // Override the default form submission with AJAX when clicking the Save button in the modal footer
+    $('#uni_modal').on('click', '#submit', function(e) {
+        e.preventDefault(); // Prevent default action of form submission
+        $('.pop-msg').remove();
+        var _this = $('#product-form');
+        var el = $('<div>').addClass("pop-msg alert").hide();
+        start_loader(); // Start loading animation
+        $.ajax({
+            url: _base_url_ + "classes/Master.php?f=edit_product",
+            type: 'POST',
+            data: new FormData(_this[0]),
+            cache: false,
+            contentType: false,
+            processData: false,
+            dataType: 'json',
+            success: function(resp) {
+                if (typeof resp === 'object' && resp.status === 'success') {
+                    // Store success message in localStorage
+                    localStorage.setItem('successMessage', resp.msg);
+                    // End loading animation and display success message
+                    end_loader(); // End loader here for immediate feedback
+                    alert_toast(resp.msg, 'success'); // Show success toast message
+                    // Redirect after a delay
+                    setTimeout(function() {
+                        location.reload(); // Reload the page after a short delay
+                        exit()
+                    }, 2000); // Delay of 2 seconds before reloading the page
+                } else {
+                    end_loader(); // End loading animation on error
+                    el.addClass("alert-danger").text(resp.msg || "An error occurred due to an unknown reason.");
+                    _this.prepend(el);
+                    el.show('slow');
+                    $('html,body,.modal').animate({ scrollTop: 0 }, 'fast');
                 }
-            });
+            },
+            error: function(err) {
+                end_loader(); // End loading animation on error
+                console.log(err);
+                alert_toast("An error occurred.", 'error');
+            }
         });
     });
+
+    // Check for a success message in localStorage after page load
+    $(window).on('load', function() {
+        var successMessage = localStorage.getItem('successMessage');
+        if (successMessage) {
+            alert_toast(successMessage, 'success'); // Display success message
+            localStorage.removeItem('successMessage'); // Remove the message after displaying it
+        }
+    });
+});
 </script>

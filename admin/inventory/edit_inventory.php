@@ -103,7 +103,7 @@ $inventory_arr = json_encode($products);
             </div>
         </div>
 
-        <button class="btn btn-default bg-gradient-navy btn-flat btn-sm" id="save_entry" type="button"><i class="fa fa-save"></i> Save Entry</button>
+    
     </form>
 </div>
 

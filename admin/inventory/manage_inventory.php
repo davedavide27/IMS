@@ -103,155 +103,143 @@ $inventory_arr = json_encode($products);
                 <input type="number" step="any" id="selling_price" name="selling_price" class="form-control form-control-sm form-control-border" value="<?= isset($selling_price) ? $selling_price : '' ?>" readonly required>
             </div>
         </div>
-
-        <button class="btn btn-default bg-gradient-navy btn-flat btn-sm" id="save_entry" type="button"><i class="fa fa-save"></i> Save Entry</button>
     </form>
 </div>
 
 <script>
-    $(function() {
-        // Modal initialization
-        $('#uni_modal').on('shown.bs.modal', function() {
-            $('.select2').select2({
-                placeholder: "Please select here",
-                width: "100%",
-                dropdownParent: $('#uni_modal')
-            });
+$(function() {
+    // Modal initialization
+    $('#uni_modal').on('shown.bs.modal', function() {
+        $('.select2').select2({
+            placeholder: "Please select here",
+            width: "100%",
+            dropdownParent: $('#uni_modal')
         });
+    });
 
-        // Form submission handling
-        $('#uni_modal #inventory-form').submit(function(e) {
-            e.preventDefault();
-            var _this = $(this);
-            $('.pop-msg').remove();
-            var el = $('<div>').addClass("pop-msg alert").hide();
+    // Form submission handling
+    $('#uni_modal #inventory-form').submit(function(e) {
+        e.preventDefault(); // Prevent default form submission
+        var _this = $(this);
+        $('.pop-msg').remove();
+        var el = $('<div>').addClass("pop-msg alert").hide();
 
-            // Validation for required fields
-            var entryDescription = $('#description').val();
-            var productId = $('#product_id').val();
-            var quantity = $('#quantity').val();
+        // Validation for required fields
+        var entryDescription = $('#description').val();
+        var productId = $('#product_id').val();
+        var quantity = $('#quantity').val();
 
-            if (!entryDescription || !productId || !quantity) {
-                el.addClass("alert-danger").text("All fields are required.");
-                _this.prepend(el);
-                el.show('slow');
-                $('html,body,.modal').animate({
-                    scrollTop: 0
-                }, 'fast');
-                return; // Exit the function if validation fails
+        if (!entryDescription || !productId || !quantity) {
+            el.addClass("alert-danger").text("All fields are required.");
+            _this.prepend(el);
+            el.show('slow');
+            $('html,body,.modal').animate({ scrollTop: 0 }, 'fast');
+            return; // Exit the function if validation fails
+        }
+
+        start_loader(); // Assuming you have a function to show loading
+
+        // Create FormData object
+        var formData = new FormData($(this)[0]);
+
+        // Check if this product already exists in the inventory
+        $.ajax({
+            url: _base_url_ + "classes/Master.php?f=check_product_exists",
+            method: 'POST',
+            data: { product_id: productId },
+            dataType: 'json',
+            success: function(resp) {
+                if (resp.status === 'success') {
+                    // If product exists, update quantity instead
+                    var existingQuantity = resp.current_quantity;
+                    var newQuantity = parseInt(existingQuantity) + parseInt(quantity);
+                    formData.append('quantity', newQuantity); // Update quantity to be saved
+
+                    $.ajax({
+                        url: _base_url_ + "classes/Master.php?f=update_inventory_entry",
+                        data: formData,
+                        cache: false,
+                        contentType: false,
+                        processData: false,
+                        method: 'POST',
+                        dataType: 'json',
+                        success: function(resp) {
+                            handleResponse(resp, _this); // Handle the response
+                        },
+                        error: function(err) {
+                            console.log(err);
+                            alert_toast("Error saving inventory!", 'error');
+                            end_loader();
+                        }
+                    });
+                } else {
+                    // If product does not exist, create a new entry
+                    $.ajax({
+                        url: _base_url_ + "classes/Master.php?f=save_inventory_entry",
+                        data: formData,
+                        cache: false,
+                        contentType: false,
+                        processData: false,
+                        method: 'POST',
+                        dataType: 'json',
+                        success: function(resp) {
+                            handleResponse(resp, _this); // Handle the response
+                        },
+                        error: function(err) {
+                            console.log(err);
+                            alert_toast("Error saving new inventory!", 'error');
+                            end_loader();
+                        }
+                    });
+                }
+            },
+            error: function(err) {
+                console.error(err);
+                alert_toast("Error checking product!", 'error');
+                end_loader();
             }
+        });
+    });
 
-            start_loader();
+    // Function to handle responses
+    function handleResponse(resp, _this) {
+        if (resp.status === 'success') {
+            _this[0].reset(); // Reset form fields
+            fetchLatestEntryCode(); // Fetch and update the latest entry code for new entries
+            $('.select2').val(null).trigger('change'); // Reset select2 dropdown
+            $('#uni_modal').modal('hide'); // Close the modal
+            location.reload(); // Refresh the page
+        } else {
+            var el = $('<div>').addClass("pop-msg alert alert-danger").text(resp.msg || "An error occurred.");
+            _this.prepend(el);
+            el.show('slow');
+            $('html,body,.modal').animate({ scrollTop: 0 }, 'fast');
+        }
+        end_loader();
+    }
 
-            // Create FormData object
-            var formData = new FormData($(this)[0]);
-
-            // Check if this product already exists in the inventory
+    // Fetch the latest entry code on modal open for new entries
+    function fetchLatestEntryCode() {
+        if (!$('input[name="id"]').val()) { // Check if it's a new entry
             $.ajax({
-                url: _base_url_ + "classes/Master.php?f=check_product_exists",
-                method: 'POST',
-                data: { product_id: productId },
+                url: _base_url_ + "classes/Master.php?f=get_latest_entry_code",
+                method: 'GET',
                 dataType: 'json',
                 success: function(resp) {
                     if (resp.status === 'success') {
-                        // If product exists, update quantity instead
-                        var existingQuantity = resp.current_quantity;
-                        var newQuantity = parseInt(existingQuantity) + parseInt(quantity);
-                        formData.append('quantity', newQuantity); // Update quantity to be saved
-
-                        $.ajax({
-                            url: _base_url_ + "classes/Master.php?f=update_inventory_entry",
-                            data: formData,
-                            cache: false,
-                            contentType: false,
-                            processData: false,
-                            method: 'POST',
-                            dataType: 'json',
-                            error: err => {
-                                console.log(err);
-                                alert_toast("Error! Error! Error!", 'error');
-                                end_loader();
-                            },
-                            success: function(resp) {
-                                handleResponse(resp, _this); // Handle the response
-                            }
-                        });
+                        $('#entry_code').val(resp.latest_code); // Update entry code field
                     } else {
-                        // If product does not exist, create a new entry
-                        $.ajax({
-                            url: _base_url_ + "classes/Master.php?f=save_inventory_entry",
-                            data: formData,
-                            cache: false,
-                            contentType: false,
-                            processData: false,
-                            method: 'POST',
-                            dataType: 'json',
-                            error: err => {
-                                console.log(err);
-                                alert_toast("Error! Error! Error!", 'error');
-                                end_loader();
-                            },
-                            success: function(resp) {
-                                handleResponse(resp, _this); // Handle the response
-                            }
-                        });
+                        console.error(resp.msg);
                     }
                 },
                 error: function(err) {
                     console.error(err);
-                    alert_toast("Error checking product!", 'error');
-                    end_loader();
                 }
             });
-        });
-
-        // Function to handle responses
-        function handleResponse(resp, _this) {
-            if (resp.status == 'success') {
-                _this[0].reset(); // Reset form fields
-                fetchLatestEntryCode(); // Fetch and update the latest entry code for new entries
-                $('.select2').val(null).trigger('change'); // Reset select2 dropdown
-                $('#uni_modal').modal('hide'); // Close the modal
-                location.reload(); // Refresh the page
-            } else {
-                el.addClass("alert-danger").text(resp.msg || "An error occurred.");
-                _this.prepend(el);
-                el.show('slow');
-                $('html,body,.modal').animate({
-                    scrollTop: 0
-                }, 'fast');
-            }
-            end_loader();
         }
+    }
 
-        // Save entry button click
-        $('#save_entry').click(function() {
-            $('#inventory-form').submit();
-        });
-
-        // Fetch the latest entry code on modal open for new entries
-        function fetchLatestEntryCode() {
-            if (!$('input[name="id"]').val()) { // Check if it's a new entry
-                $.ajax({
-                    url: _base_url_ + "classes/Master.php?f=get_latest_entry_code",
-                    method: 'GET',
-                    dataType: 'json',
-                    success: function(resp) {
-                        if (resp.status === 'success') {
-                            $('#entry_code').val(resp.latest_code); // Update entry code field
-                        } else {
-                            console.error(resp.msg);
-                        }
-                    },
-                    error: function(err) {
-                        console.error(err);
-                    }
-                });
-            }
-        }
-
-        fetchLatestEntryCode(); // Call this function to fetch the latest entry code when the modal opens
-    });
+    fetchLatestEntryCode(); // Call this function to fetch the latest entry code when the modal opens
 
     // Populate prices based on selected product
     $('#product_id').change(function() {
@@ -265,5 +253,5 @@ $inventory_arr = json_encode($products);
             $('#selling_price').val(''); // Reset selling price
         }
     });
+});
 </script>
-

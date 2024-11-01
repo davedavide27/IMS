@@ -78,105 +78,103 @@ $sales_code = $latest_code ? (intval($latest_code) + 1) : 1; // Auto-increment s
                 <input type="number" step="any" id="total_price" name="total_price" class="form-control form-control-sm form-control-border" value="<?= isset($total_price) ? $total_price : '' ?>" readonly required>
             </div>
         </div>
-
-        <button class="btn btn-default bg-gradient-navy btn-flat btn-sm" id="save_sales" type="button"><i class="fa fa-save"></i> Save Sales</button>
-        <input type="hidden" id="user_id" name="user_id" value="<?= $user_id ?>" /> <!-- Hidden field for user_id -->
     </form>
 </div>
 
 <script>
-    $(function() {
-        // Initialize select2 for product dropdown
-        $('#product_id').select2({
-            placeholder: "Please select here",
-            width: "100%",
-            dropdownParent: $('#uni_modal')
-        });
+$(function() {
+    // Initialize select2 for product dropdown
+    $('#product_id').select2({
+        placeholder: "Please select here",
+        width: "100%",
+        dropdownParent: $('#uni_modal')
+    });
 
-        // Populate price and available stocks on product selection
-        $('#product_id').change(function() {
-            var selectedProduct = $(this).val();
-            var products = <?= $inventory_arr ?>; // Product data passed from PHP
+    // Populate price and available stocks on product selection
+    $('#product_id').change(function() {
+        var selectedProduct = $(this).val();
+        var products = <?= $inventory_arr ?>; // Product data passed from PHP
 
-            if (products[selectedProduct]) {
-                var productData = products[selectedProduct];
-                $('#selling_price').val(productData.selling_price); // Set selling price
-                $('#available_stocks').val(productData.available_stocks); // Set available stocks
-                $('#quantity').val(''); // Clear quantity field
-                $('#total_price').val(''); // Clear total price field
-            } else {
-                $('#selling_price').val('');
-                $('#available_stocks').val('');
-                $('#quantity').val(''); // Clear quantity field
-                $('#total_price').val('');
-            }
-        });
+        if (products[selectedProduct]) {
+            var productData = products[selectedProduct];
+            $('#selling_price').val(productData.selling_price);
+            $('#available_stocks').val(productData.available_stocks);
+            $('#quantity').val(''); // Clear quantity for new input
+            $('#total_price').val(''); // Clear total price
+        } else {
+            $('#selling_price').val('');
+            $('#available_stocks').val('');
+            $('#quantity').val('');
+            $('#total_price').val('');
+        }
+    });
 
-        // Calculate total price on quantity change
-        $('#quantity').on('input', function() {
-            var quantity = parseInt($(this).val()) || 0; // Get quantity and default to 0 if NaN
-            var sellingPrice = parseFloat($('#selling_price').val()) || 0; // Get selling price and default to 0 if NaN
+    // Calculate total price on quantity change
+    $('#quantity').on('input', function() {
+        var quantity = parseInt($(this).val()) || 0;
+        var sellingPrice = parseFloat($('#selling_price').val()) || 0;
 
-            // Calculate total price
-            var totalPrice = quantity * sellingPrice;
-            $('#total_price').val(totalPrice.toFixed(2)); // Set total price, formatted to 2 decimal places
-        });
+        // Calculate total price
+        var totalPrice = quantity * sellingPrice;
+        $('#total_price').val(totalPrice.toFixed(2));
+    });
 
-        // Save sales entry button click
-        $('#save_sales').click(function() {
-            // Check if entered quantity exceeds available stocks
-            var availableStocks = parseInt($('#available_stocks').val());
-            var enteredQuantity = parseInt($('#quantity').val());
+    // Save sales entry form submission handling
+    $('#sales-form').submit(function(e) {
+        e.preventDefault(); // Prevent default form submission
 
-            if (enteredQuantity <= 0) {
-                alert_toast("Please enter a valid quantity.", 'error');
-                return false;
-            }
+        // Check if entered quantity exceeds available stocks
+        var availableStocks = parseInt($('#available_stocks').val());
+        var enteredQuantity = parseInt($('#quantity').val());
 
-            if (enteredQuantity > availableStocks) {
-                alert_toast("Entered quantity exceeds available stocks.", 'error');
-                return false;
-            }
+        if (enteredQuantity <= 0) {
+            alert_toast("Please enter a valid quantity.", 'error');
+            return false;
+        }
 
-            // Prepare data for the AJAX request
-            var formData = {
-                sales_code: $('#sales_code').val(),
-                purchase_date: $('#purchase_date').val(), // Updated to purchase_date
-                product_id: $('#product_id').val(),
-                quantity: enteredQuantity,
-                selling_price: $('#selling_price').val(), // Include selling price
-                total_price: $('#total_price').val(), // Send total price
-                user_id: $('#user_id').val() // Include user_id
-            };
+        if (enteredQuantity > availableStocks) {
+            alert_toast("Entered quantity exceeds available stocks.", 'error');
+            return false;
+        }
 
-            // AJAX request to save the sales entry
-            $.ajax({
-                type: "POST",
-                url: _base_url_ + "classes/Master.php?f=sales_entry", // Ensure this points to your sales_entry function
-                data: formData,
-                dataType: "json",
-                success: function(response) {
-                    // Check if response is valid
-                    if (response && typeof response === "object") {
-                        if (response.status === 'success') {
-                            alert_toast("Sales entry saved successfully!", 'success');
-                            // Close modal, reload the page, and display success message
-                            $('#uni_modal').modal('hide'); // Close the modal
-                            setTimeout(function() {
-                                location.reload(); // Reload the page
-                            }, 1000); // Wait 1 second before reloading
-                        } else {
-                            alert_toast("Error: " + response.msg, 'error');
-                        }
+        // Prepare data for the AJAX request
+        var formData = {
+            sales_code: $('#sales_code').val(),
+            purchase_date: $('#purchase_date').val(),
+            product_id: $('#product_id').val(),
+            quantity: enteredQuantity,
+            selling_price: $('#selling_price').val(),
+            total_price: $('#total_price').val(),
+            user_id: <?= json_encode($user_id) ?> // Include user_id from PHP
+        };
+
+        // AJAX request to save the sales entry
+        $.ajax({
+            type: "POST",
+            url: _base_url_ + "classes/Master.php?f=sales_entry",
+            data: formData,
+            dataType: "json",
+            success: function(response) {
+                // Handle the response
+                if (response && typeof response === "object") {
+                    if (response.status === 'success') {
+                        alert_toast("Sales entry saved successfully!", 'success');
+                        $('#uni_modal').modal('hide'); // Close the modal
+                        setTimeout(function() {
+                            location.reload(); // Reload the page
+                        }, 1000);
                     } else {
-                        alert_toast("Unexpected response format.", 'error');
+                        alert_toast("Error: " + response.msg, 'error');
                     }
-                },
-                error: function(jqXHR, textStatus, errorThrown) {
-                    alert_toast("Request failed: " + textStatus + ", " + errorThrown, 'error');
-                    console.error("AJAX error: ", textStatus, errorThrown, jqXHR.responseText);
+                } else {
+                    alert_toast("Unexpected response format.", 'error');
                 }
-            });
+            },
+            error: function(jqXHR, textStatus, errorThrown) {
+                alert_toast("Request failed: " + textStatus + ", " + errorThrown, 'error');
+                console.error("AJAX error: ", textStatus, errorThrown, jqXHR.responseText);
+            }
         });
     });
+});
 </script>

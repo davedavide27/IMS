@@ -1,5 +1,6 @@
 <?php
 require_once('../../config.php');
+
 if (isset($_GET['id'])) {
     $qry = $conn->query("SELECT * FROM `products` WHERE id = '{$_GET['id']}'");
     if ($qry->num_rows > 0) {
@@ -12,7 +13,7 @@ if (isset($_GET['id'])) {
 ?>
 
 <div class="container-fluid">
-    <form action="" id="product-form">
+    <form id="product-form" action="" method="POST"> <!-- Action is left empty to prevent redirection -->
         <input type="hidden" name="id" value="<?php echo isset($id) ? $id : '' ?>">
         <input type="hidden" name="delete_flag" id="delete_flag" value="<?php echo isset($delete_flag) ? $delete_flag : 0; ?>">
 
@@ -49,16 +50,12 @@ if (isset($_GET['id'])) {
                 <button type="button" class="btn btn-sm <?= isset($delete_flag) && $delete_flag == 1 ? 'btn-danger' : 'btn-light'; ?>" id="inactive-btn">Inactive</button>
             </div>
         </div>
-
-        <button class="btn btn-default bg-gradient-navy btn-flat btn-sm" id="save_entry" type="button"><i class="fa fa-save"></i> Save Entry</button>
     </form>
 </div>
 
 <script>
     $(function() {
         // Highlight selected status button
-        var deleteFlag = $('#delete_flag').val();
-
         $('#active-btn').click(function() {
             $('#delete_flag').val(0);
             $('#active-btn').removeClass('btn-light').addClass('btn-primary');
@@ -71,41 +68,48 @@ if (isset($_GET['id'])) {
             $('#active-btn').removeClass('btn-primary').addClass('btn-light');
         });
 
-        // Save form
-        $('#save_entry').click(function() {
+        // Override the default form submission with AJAX when clicking the Save button in the modal footer
+        $('#uni_modal').on('click', '#submit', function(e) {
+            e.preventDefault(); // Prevent default action of form submission
             $('.pop-msg').remove();
             var _this = $('#product-form');
-            var el = $('<div>');
-            el.addClass("pop-msg alert").hide();
-            start_loader();
+            var el = $('<div>').addClass("pop-msg alert").hide();
+            start_loader(); // Start loading animation
+
+            // AJAX call to save the product
             $.ajax({
                 url: _base_url_ + "classes/Master.php?f=save_product",
-                data: new FormData(_this[0]),
+                type: 'POST',
+                data: new FormData(_this[0]), // Use FormData to gather form inputs
                 cache: false,
                 contentType: false,
                 processData: false,
-                method: 'POST',
                 dataType: 'json',
-                error: err => {
-                    console.log(err);
-                    alert_toast("An error occurred.", 'error');
-                    end_loader();
-                },
                 success: function(resp) {
+                    end_loader(); // End loading animation
                     if (typeof resp === 'object' && resp.status === 'success') {
-                        alert_toast(resp.msg, 'success');  // Display the success message from the response
+                        el.addClass("alert-success").text(resp.msg); // Prepare success message
+                        _this.prepend(el); // Add message to the form
+                        el.show('slow'); // Display success message
+
+                        // Set a timeout to reload the page after displaying the message
                         setTimeout(function() {
-                            location.reload();  // Reload the page after a short delay
-                        }, 2000);  // Delay of 2 seconds before reloading the page
+                            location.reload(2000); // Reload the page after a delay
+                        }, 2000); // Delay of 2 seconds before reloading the page
                     } else {
                         el.addClass("alert-danger").text(resp.msg || "An error occurred due to an unknown reason.");
                         _this.prepend(el);
                         el.show('slow');
                         $('html,body,.modal').animate({ scrollTop: 0 }, 'fast');
                     }
-                    end_loader();
+                },
+                error: function(err) {
+                    end_loader(); // End loading animation
+                    console.log(err);
+                    alert_toast("An error occurred.", 'error');
                 }
             });
         });
     });
 </script>
+
