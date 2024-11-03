@@ -1,4 +1,5 @@
 <?php
+/*
 require_once('../../config.php');
 if(isset($_GET['id'])){
     $qry = $conn->query("SELECT * FROM `account_list` where id = '{$_GET['id']}'");
@@ -46,3 +47,4 @@ if(isset($_GET['id'])){
         <button class="btn btn-flat btn-sm btn-dark" type="button" data-dismiss="modal"><i class="fa fa-times"></i> Close</button>
     </div>
 </div>
+*/

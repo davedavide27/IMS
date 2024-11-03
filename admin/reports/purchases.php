@@ -155,7 +155,7 @@ $inventory_items_json = json_encode($inventory_items);
                         <button class="btn btn-default border btn-flat btn-sm" id="printButton" type="button">
                             <i class="fa fa-print"></i> Print
                         </button>
-                        <button class="btn btn-primary border btn-flat btn-sm" id="exportExcelButton" type="button">
+                        <button class="btn btn-success border btn-flat btn-sm" id="exportExcelButton" type="button">
                             <i class="fa fa-file-excel"></i> Export to Excel
                         </button>
                     </div>
@@ -293,8 +293,8 @@ $inventory_items_json = json_encode($inventory_items);
             }
             data.push(headerRow); // Add header row to the data array
 
-            // To keep track of the maximum length of the data in each column
-            var maxColumnLengths = new Array(headers.length).fill(0);
+            // Create an array to store max widths for each column
+            var maxColumnWidths = headerRow.map(header => header.length + 5); // +5 for padding
 
             // Loop through each row in the table (starting from the second row)
             for (var i = 1; i < table.rows.length; i++) {
@@ -302,11 +302,11 @@ $inventory_items_json = json_encode($inventory_items);
                 var row = table.rows[i];
                 // Loop through each cell in the row
                 for (var j = 0; j < row.cells.length; j++) {
-                    var cellValue = row.cells[j].innerText;
-                    rowData.push(cellValue); // Add each cell's data to the rowData array
+                    var cellText = row.cells[j].innerText;
+                    rowData.push(cellText); // Add each cell data to the row data
 
-                    // Update the maximum length for the column
-                    maxColumnLengths[j] = Math.max(maxColumnLengths[j], cellValue.length);
+                    // Update max width for the column if the current cell text is longer
+                    maxColumnWidths[j] = Math.max(maxColumnWidths[j], cellText.length + 5); // +5 for padding
                 }
                 data.push(rowData); // Add each row to the data array
             }
@@ -315,10 +315,10 @@ $inventory_items_json = json_encode($inventory_items);
             var wb = XLSX.utils.book_new();
             var ws = XLSX.utils.aoa_to_sheet(data);
 
-            // Set column widths based on the maximum length of the content
-            var columnWidths = maxColumnLengths.map(length => ({
-                wch: length + 2
-            })); // Adding 2 for some padding
+            // Set column widths based on the maximum content width
+            var columnWidths = maxColumnWidths.map(width => ({
+                wch: width
+            }));
             ws['!cols'] = columnWidths;
 
             XLSX.utils.book_append_sheet(wb, ws, "Sheet1");

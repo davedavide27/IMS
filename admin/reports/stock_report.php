@@ -1,14 +1,13 @@
 <?php
-function format_num($number)
-{
+function format_num($number) {
     $decimals = 0;
     $num_ex = explode('.', $number);
     $decimals = isset($num_ex[1]) ? strlen($num_ex[1]) : 0;
     return number_format($number, $decimals);
 }
-
-$from = isset($_GET['from']) ? $_GET['from'] : date("Y-m-d", strtotime(date('Y-m-d') . " -1 month"));
-$to = isset($_GET['to']) ? $_GET['to'] : date("Y-m-d");
+// Set default date values
+$from = isset($_GET['from']) ? $_GET['from'] : date("Y-m-d H:i", strtotime(date('Y-m-d') . " -1 month"));
+$to = isset($_GET['to']) ? $_GET['to'] : date("Y-m-d H:i", strtotime('+1 day'));
 $product_id = isset($_GET['product_id']) ? $_GET['product_id'] : '';
 
 // Filter to fetch all products (not limited by date)
@@ -28,7 +27,7 @@ $offset = ($page - 1) * $limit;
 
 // Count total records using the correct column name and product filter
 $total_query = $conn->query("SELECT COUNT(*) as total FROM stock_reports sr 
-    WHERE sr.report_date BETWEEN '{$from}' AND '{$to}'" . ($product_id ? " AND sr.product_id = '{$product_id}'" : ""));
+    WHERE sr.report_datetime BETWEEN '{$from}' AND '{$to}'" . ($product_id ? " AND sr.product_id = '{$product_id}'" : ""));
 $total_row = $total_query->fetch_assoc();
 $total_records = $total_row['total'];
 $total_pages = ceil($total_records / $limit);
@@ -39,30 +38,69 @@ $total_available_stocks = 0;
 $total_stocks_sold = 0;
 
 // Select stock reports using the correct column name and product filter
-$stock_reports = $conn->query("SELECT sr.report_date, p.name as product_name, 
-    sr.stock_entries, sr.available_stocks, sr.stocks_sold 
+$stock_reports_result = $conn->query("SELECT sr.id, sr.report_datetime, p.name as product_name, 
+    sr.stock_entries, sr.available_stocks, sr.stocks_sold, sr.status, sr.entry_type
 FROM stock_reports sr 
 INNER JOIN products p ON sr.product_id = p.id 
-WHERE sr.report_date BETWEEN '{$from}' AND '{$to}'" . ($product_id ? " AND sr.product_id = '{$product_id}'" : "") . "
-LIMIT $limit OFFSET $offset");
+WHERE sr.report_datetime BETWEEN '{$from}' AND '{$to}'" . ($product_id ? " AND sr.product_id = '{$product_id}'" : "") . "
+ORDER BY sr.report_datetime ASC LIMIT $limit OFFSET $offset");
 
-// Initialize variables for totals
+// Initialize variables for totals and stock entries
 $stock_entries = [];
-while ($row = $stock_reports->fetch_assoc()) {
+while ($row = $stock_reports_result->fetch_assoc()) {
     $total_stock_entries += $row['stock_entries'];
     $total_available_stocks += $row['available_stocks'];
     $total_stocks_sold += $row['stocks_sold'];
     $stock_entries[] = $row;
 }
 
+
+
 $stock_entries_json = json_encode($stock_entries);
 ?>
 
 <style>
-    /* ... existing styles ... */
+    @media print {
+        .container {
+            width: 100%;
+        }
+
+        .row {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .col-md-4 {
+            width: 100%;
+            margin-bottom: 10px;
+        }
+
+        .bg-light {
+            border: 1px solid #000;
+            padding: 10px;
+            background-color: #f8f9fa;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th,
+        td {
+            border: 1px solid #000;
+            padding: 5px;
+        }
+    }
+
+    th.p-0,
+    td.p-0 {
+        padding: 0 !important;
+    }
 </style>
 
 <div class="card card-outline card-primary">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
     <div class="card-header">
         <h3 class="card-title">Stock Reports</h3>
     </div>
@@ -73,11 +111,11 @@ $stock_entries_json = json_encode($stock_entries);
                 <div class="row align-items-end">
                     <div class="col-md-4 form-group">
                         <label for="from" class="control-label">Date From</label>
-                        <input type="date" id="from" name="from" value="<?= $from ?>" class="form-control form-control-sm rounded-0">
+                        <input type="datetime-local" id="from" name="from" value="<?= date("Y-m-d\TH:i", strtotime($from)) ?>" class="form-control form-control-sm rounded-0">
                     </div>
                     <div class="col-md-4 form-group">
                         <label for="to" class="control-label">Date To</label>
-                        <input type="date" id="to" name="to" value="<?= $to ?>" class="form-control form-control-sm rounded-0">
+                        <input type="datetime-local" id="to" name="to" value="<?= date("Y-m-d\TH:i", strtotime($to)) ?>" class="form-control form-control-sm rounded-0">
                     </div>
                     <div class="col-md-4 form-group">
                         <label for="product_id" class="control-label">Product</label>
@@ -97,7 +135,7 @@ $stock_entries_json = json_encode($stock_entries);
                         <button class="btn btn-default border btn-flat btn-sm" id="printButton" type="button">
                             <i class="fa fa-print"></i> Print
                         </button>
-                        <button class="btn btn-primary border btn-flat btn-sm" id="exportExcelButton" type="button">
+                        <button class="btn btn-success border btn-flat btn-sm" id="exportExcelButton" type="button">
                             <i class="fa fa-file-excel"></i> Export to Excel
                         </button>
                     </div>
@@ -117,21 +155,43 @@ $stock_entries_json = json_encode($stock_entries);
             <table class="table table-hover table-bordered" id="reportsTable">
                 <thead>
                     <tr>
+                        <th class="text-center">Entry No.</th> <!-- New Column for Entry Number -->
                         <th class="text-center">Date</th>
                         <th class="text-center">Product</th>
                         <th class="text-center">Stock Entries</th>
                         <th class="text-center">Available Stocks</th>
                         <th class="text-center">Stocks Sold</th>
+                        <th class="text-center">Entry Status</th>
+                        <th class="text-center">Entry Type</th>
                     </tr>
                 </thead>
                 <tbody>
-                    <?php foreach ($stock_entries as $row): ?>
+                    <?php
+                    $entry_no = 1; // Initialize entry number
+                    foreach ($stock_entries as $row): ?>
                         <tr>
-                            <td><?= date("M d, Y", strtotime($row['report_date'])) ?></td>
+                            <td class="text-center"><?= $entry_no++ ?></td> <!-- Display and increment entry number -->
+                            <td><?= date("M d, Y g:i A", strtotime($row['report_datetime'])) ?></td>
                             <td><?= $row['product_name'] ?></td>
                             <td class="text-right"><?= format_num($row['stock_entries']) ?></td>
                             <td class="text-right"><?= format_num($row['available_stocks']) ?></td>
                             <td class="text-right"><?= format_num($row['stocks_sold']) ?></td>
+                            <td class="text-center">
+                                <?php
+                                // Display status based on status flag
+                                echo $row['status'] == 1
+                                    ? '<span class="badge badge-primary bg-gradient-primary">Available</span>'
+                                    : '<span class="badge badge-danger bg-gradient-danger">Deleted</span>';
+                                ?>
+                            </td>
+                            <td class="text-center">
+                                <?php
+                                // Display entry type based on entry_type flag
+                                echo $row['entry_type'] == 1
+                                    ? '<span class="badge badge-primary bg-gradient-primary">Inventory</span>'
+                                    : '<span class="badge badge-danger bg-gradient-danger">Sales</span>';
+                                ?>
+                            </td>
                         </tr>
                     <?php endforeach; ?>
                 </tbody>
@@ -139,6 +199,8 @@ $stock_entries_json = json_encode($stock_entries);
         </div>
     </div>
 </div>
+
+
 
 
 <script>
@@ -192,23 +254,59 @@ $stock_entries_json = json_encode($stock_entries);
                 }, 1000);
             }, 2000);
         });
-        
+
         $('#exportExcelButton').click(function() {
-            exportTableToExcel('reportsTable', 'Stock_Report');
+            exportTableToExcel('reportsTable', 'Stock_Reports');
         });
 
         function exportTableToExcel(tableID, filename = '') {
-            var dataType = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
-            var tableSelect = document.getElementById(tableID);
-            var tableHTML = tableSelect.outerHTML.replace(/ /g, '%20');
+            // Get the table element
+            var table = document.getElementById(tableID);
+            var data = [];
 
-            // Create a link element
-            var downloadLink = document.createElement("a");
-            document.body.appendChild(downloadLink);
-            downloadLink.href = 'data:' + dataType + ', ' + tableHTML;
-            downloadLink.download = filename ? filename +'s' + '.xlsx' : 'excel_data.xlsx';
-            downloadLink.click();
-            document.body.removeChild(downloadLink);
+            // Add the header row
+            var headerRow = [];
+            var headers = table.rows[0].cells; // Assuming the first row is the header
+            for (var i = 0; i < headers.length; i++) {
+                headerRow.push(headers[i].innerText);
+            }
+            data.push(headerRow); // Add header row to the data array
+
+            // Create an array to store max widths for each column
+            var maxColumnWidths = headerRow.map(header => header.length + 5); // +5 for padding
+
+            // Loop through each row in the table (starting from the second row)
+            for (var i = 1; i < table.rows.length; i++) {
+                var rowData = [];
+                var row = table.rows[i];
+                // Loop through each cell in the row
+                for (var j = 0; j < row.cells.length; j++) {
+                    var cellText = row.cells[j].innerText;
+                    rowData.push(cellText); // Add each cell data to the row data
+
+                    // Update max width for the column if the current cell text is longer
+                    maxColumnWidths[j] = Math.max(maxColumnWidths[j], cellText.length + 5); // +5 for padding
+                }
+                data.push(rowData); // Add each row to the data array
+            }
+
+            // Create a new workbook and add the data as a worksheet
+            var wb = XLSX.utils.book_new();
+            var ws = XLSX.utils.aoa_to_sheet(data);
+
+            // Set column widths based on the maximum content width
+            var columnWidths = maxColumnWidths.map(width => ({
+                wch: width
+            }));
+            ws['!cols'] = columnWidths;
+
+            XLSX.utils.book_append_sheet(wb, ws, "Sheet1");
+
+            // Specify the filename
+            filename = filename ? filename + '.xlsx' : 'excel_data.xlsx';
+
+            // Write the workbook and trigger download
+            XLSX.writeFile(wb, filename);
         }
     });
 </script>

@@ -9,10 +9,10 @@ function format_num($number)
 
 $from = isset($_GET['from']) ? $_GET['from'] : date("Y-m-d", strtotime(date('Y-m-d') . " -1 month"));
 $to = isset($_GET['to']) ? $_GET['to'] : date("Y-m-d");
+$product_filter = isset($_GET['product_id']) && $_GET['product_id'] != '' ? (int)$_GET['product_id'] : null;
 
 // Filter to fetch all products (not limited by date)
-$product_query = $conn->query("SELECT DISTINCT p.id, p.name FROM products p
-    ORDER BY p.name ASC");
+$product_query = $conn->query("SELECT DISTINCT p.id, p.name FROM products p ORDER BY p.name ASC");
 
 $products = [];
 while ($product_row = $product_query->fetch_assoc()) {
@@ -26,11 +26,14 @@ if ($page < 1) {
 }
 $offset = ($page - 1) * $limit;
 
-// Count total records
-$total_query = $conn->query("SELECT COUNT(*) as total FROM inventory_entries ie 
+// Count total records with product filter
+$total_query = $conn->query(
+    "SELECT COUNT(*) as total FROM inventory_entries ie 
     INNER JOIN products p ON ie.product_id = p.id 
     INNER JOIN stocks s ON ie.product_id = s.product_id 
-    WHERE ie.entry_date BETWEEN '{$from}' AND '{$to}'");
+    WHERE ie.entry_date BETWEEN '{$from}' AND '{$to}'" .
+        ($product_filter ? " AND ie.product_id = {$product_filter}" : "")
+);
 $total_row = $total_query->fetch_assoc();
 $total_records = $total_row['total'];
 $total_pages = ceil($total_records / $limit);
@@ -40,7 +43,8 @@ $total_purchase = 0;
 $total_selling = 0;
 $total_sales = 0; // New variable for total sales
 
-$inventory = $conn->query("SELECT ie.entry_date, p.id AS product_id, p.name as product_name, ie.description, 
+// Filter inventory entries by selected product and date range
+$inventory_sql = "SELECT ie.entry_date, p.id AS product_id, p.name as product_name, ie.description, 
 p.purchase_price, p.selling_price, 
 LEAST(ie.quantity, s.available_stocks) as quantity, 
 (p.purchase_price * LEAST(ie.quantity, s.available_stocks)) as total_purchase,
@@ -48,20 +52,23 @@ LEAST(ie.quantity, s.available_stocks) as quantity,
 FROM inventory_entries ie 
 INNER JOIN products p ON ie.product_id = p.id 
 INNER JOIN stocks s ON ie.product_id = s.product_id 
-WHERE ie.entry_date BETWEEN '{$from}' AND '{$to}'
-LIMIT $limit OFFSET $offset");
+WHERE ie.entry_date BETWEEN '{$from}' AND '{$to}'" .
+    ($product_filter ? " AND ie.product_id = {$product_filter}" : "") .
+    " LIMIT $limit OFFSET $offset";
+$inventory = $conn->query($inventory_sql);
 
-// Fetch sales data based on the date range and pagination
-$sales_query = $conn->query("SELECT s.purchase_date, p.id AS product_id, p.name as product_name, 
+// Fetch sales data based on the date range, selected product, and pagination
+$sales_sql = "SELECT s.purchase_date, p.id AS product_id, p.name as product_name, 
 s.quantity, s.selling_price, 
 (s.selling_price * s.quantity) as total_sales,
 stk.available_stocks
 FROM sales s 
 INNER JOIN products p ON s.product_id = p.id 
 INNER JOIN stocks stk ON s.product_id = stk.product_id 
-WHERE s.purchase_date BETWEEN '{$from}' AND '{$to}' 
-LIMIT $limit OFFSET $offset");
-
+WHERE s.purchase_date BETWEEN '{$from}' AND '{$to}'" .
+    ($product_filter ? " AND s.product_id = {$product_filter}" : "") .
+    " LIMIT $limit OFFSET $offset";
+$sales_query = $conn->query($sales_sql);
 
 // Initialize variables for totals
 $total_quantity_sold = 0;
@@ -77,6 +84,7 @@ while ($row = $sales_query->fetch_assoc()) {
 
 $sales_items_json = json_encode($sales_items);
 ?>
+
 
 <style>
     @media print {
@@ -121,7 +129,7 @@ $sales_items_json = json_encode($sales_items);
 </style>
 
 <div class="card card-outline card-primary">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
     <div class="card-header">
         <h3 class="card-title">Total Sales Reports</h3>
     </div>
@@ -156,7 +164,7 @@ $sales_items_json = json_encode($sales_items);
                         <button class="btn btn-default border btn-flat btn-sm" id="printButton" type="button">
                             <i class="fa fa-print"></i> Print
                         </button>
-                        <button class="btn btn-primary border btn-flat btn-sm" id="exportExcelButton" type="button">
+                        <button class="btn btn-success border btn-flat btn-sm" id="exportExcelButton" type="button">
                             <i class="fa fa-file-excel"></i> Export to Excel
                         </button>
                     </div>
@@ -261,9 +269,9 @@ $sales_items_json = json_encode($sales_items);
                 }, 1000);
             }, 2000);
         });
-        
+
         $('#exportExcelButton').click(function() {
-            exportTableToExcel('reportsTable', 'Purchase_Report');
+            exportTableToExcel('reportsTable', 'Sales_Report');
         });
 
         function exportTableToExcel(tableID, filename = '') {
@@ -279,13 +287,20 @@ $sales_items_json = json_encode($sales_items);
             }
             data.push(headerRow); // Add header row to the data array
 
+            // Create an array to store max widths for each column
+            var maxColumnWidths = headerRow.map(header => header.length + 5); // +5 for padding
+
             // Loop through each row in the table (starting from the second row)
             for (var i = 1; i < table.rows.length; i++) {
                 var rowData = [];
                 var row = table.rows[i];
                 // Loop through each cell in the row
                 for (var j = 0; j < row.cells.length; j++) {
-                    rowData.push(row.cells[j].innerText);
+                    var cellText = row.cells[j].innerText;
+                    rowData.push(cellText); // Add each cell data to the row data
+
+                    // Update max width for the column if the current cell text is longer
+                    maxColumnWidths[j] = Math.max(maxColumnWidths[j], cellText.length + 5); // +5 for padding
                 }
                 data.push(rowData); // Add each row to the data array
             }
@@ -294,9 +309,9 @@ $sales_items_json = json_encode($sales_items);
             var wb = XLSX.utils.book_new();
             var ws = XLSX.utils.aoa_to_sheet(data);
 
-            // Set column widths based on the header content
-            var columnWidths = headerRow.map(header => ({
-                wch: header.length + 5
+            // Set column widths based on the maximum content width
+            var columnWidths = maxColumnWidths.map(width => ({
+                wch: width
             }));
             ws['!cols'] = columnWidths;
 
