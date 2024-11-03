@@ -32,10 +32,9 @@ class Master extends DBConnection
 	{
 		// Check if session is already started
 		if (session_status() === PHP_SESSION_NONE) {
-			session_start(); // Start session only if it's not already active
+			session_start();
 		}
 	
-		// Initialize response
 		$resp = ['status' => 'failed', 'msg' => 'An unexpected error occurred.'];
 	
 		// Get input data
@@ -46,13 +45,11 @@ class Master extends DBConnection
 		$description = isset($_POST['description']) ? $this->conn->real_escape_string($_POST['description']) : null;
 		$remarks = isset($_POST['remarks']) ? $this->conn->real_escape_string($_POST['remarks']) : null;
 	
-		// Ensure all required fields are provided
 		if (empty($product_id) || is_null($quantity) || empty($entry_date) || empty($entry_code)) {
 			$resp['msg'] = "All fields are required.";
 			return json_encode($resp);
 		}
 	
-		// Check if user ID is set in the session
 		if (!isset($_SESSION['userdata']['id'])) {
 			$resp['msg'] = "User is not logged in.";
 			return json_encode($resp);
@@ -60,26 +57,18 @@ class Master extends DBConnection
 	
 		$user_id = $this->conn->real_escape_string($_SESSION['userdata']['id']);
 	
-		// Check if entry already exists for the given product on the same date
-		$checkEntrySql = "SELECT * FROM `inventory_entries` WHERE `product_id` = '$product_id' AND `entry_date` = '$entry_date'";
-		$entryCheckResult = $this->conn->query($checkEntrySql);
-		
-		// Check for existing stock
 		$stockCheckSql = "SELECT * FROM `stocks` WHERE `product_id` = '$product_id'";
 		$stockCheckResult = $this->conn->query($stockCheckSql);
-		
-		// Initialize variable for updating stock
+	
 		$stockExists = false;
-		$newQuantity = $quantity; // Start with the input quantity for stock updates
+		$newQuantity = $quantity;
 	
 		if ($stockCheckResult->num_rows > 0) {
-			// Stock entry exists
 			$stockRow = $stockCheckResult->fetch_assoc();
 			$stockExists = true;
-			$newQuantity += $stockRow['available_stocks']; // Add the input quantity to existing stock
+			$newQuantity += $stockRow['available_stocks'];
 		}
 	
-		// Insert a new entry regardless of existing entries
 		$data = [
 			'entry_code' => $entry_code,
 			'entry_date' => $entry_date,
@@ -90,7 +79,6 @@ class Master extends DBConnection
 			'remarks' => $remarks
 		];
 	
-		// Insert new entry
 		$fields = implode(", ", array_keys($data));
 		$values = implode(", ", array_map(function ($value) {
 			return is_null($value) ? 'NULL' : "'$value'";
@@ -99,29 +87,29 @@ class Master extends DBConnection
 		$sql = "INSERT INTO `inventory_entries` ($fields) VALUES ($values)";
 	
 		if ($this->conn->query($sql)) {
-			// After successful insert, update the stocks table
 			if ($stockExists) {
-				// Update available_stocks
 				$updateStockSql = "UPDATE `stocks` SET `available_stocks` = '$newQuantity', `date_updated` = CURRENT_TIMESTAMP WHERE `product_id` = '$product_id'";
 				$this->conn->query($updateStockSql);
 			} else {
-				// Stock entry does not exist, insert a new entry
 				$insertStockSql = "INSERT INTO `stocks` (`product_id`, `available_stocks`, `date_created`) VALUES ('$product_id', '$quantity', CURRENT_TIMESTAMP)";
 				$this->conn->query($insertStockSql);
 			}
 	
-			// Return success response
+			// Insert entry into stock_reports table
+			$reportSql = "INSERT INTO `stock_reports` (`report_date`, `product_id`, `stock_entries`, `available_stocks`)
+						  VALUES ('$entry_date', '$product_id', '$quantity', '$newQuantity')";
+			$this->conn->query($reportSql);
+	
 			$resp['status'] = 'success';
 			$resp['msg'] = "New entry has been successfully added, and stocks updated.";
 			$this->settings->set_flashdata('success', $resp['msg']);
 		} else {
 			$resp['msg'] = "An error occurred during the operation.";
-			$resp['err'] = "Error: " . $this->conn->error; // Log the SQL error for debugging
+			$resp['err'] = "Error: " . $this->conn->error;
 		}
 	
 		return json_encode($resp);
 	}
-	
 	
 	
 
@@ -494,8 +482,8 @@ class Master extends DBConnection
 		// Check if the request method is POST
 		if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 			$resp['msg'] = "Invalid request method.";
-			echo json_encode($resp); // Return response
-			exit; // Ensure no further code is executed
+			echo json_encode($resp);
+			exit;
 		}
 	
 		// Get input data
@@ -509,15 +497,15 @@ class Master extends DBConnection
 		// Ensure all required fields are provided
 		if (empty($sales_code) || empty($purchase_date) || empty($product_id) || is_null($quantity) || is_null($selling_price) || is_null($total_price)) {
 			$resp['msg'] = "All fields are required.";
-			echo json_encode($resp); // Return response
-			exit; // Ensure no further code is executed
+			echo json_encode($resp);
+			exit;
 		}
 	
 		// Check if user ID is set in the session
 		if (!isset($_SESSION['userdata']['id'])) {
 			$resp['msg'] = "User is not logged in.";
-			echo json_encode($resp); // Return response
-			exit; // Ensure no further code is executed
+			echo json_encode($resp);
+			exit;
 		}
 	
 		// Get user ID from session safely
@@ -526,18 +514,18 @@ class Master extends DBConnection
 		// Check for existing sale to prevent duplicates based on sales_code
 		$checkSql = "SELECT COUNT(*) as count FROM `sales` WHERE `sales_code` = '$sales_code'";
 		$checkResult = $this->conn->query($checkSql);
-		
+	
 		if ($checkResult === false) {
 			$resp['msg'] = "Database error: " . $this->conn->error;
-			echo json_encode($resp); // Return response
-			exit; // Ensure no further code is executed
+			echo json_encode($resp);
+			exit;
 		}
 	
 		$row = $checkResult->fetch_assoc();
 		if ($row['count'] > 0) {
 			$resp['msg'] = "Sale with code '$sales_code' already exists.";
-			echo json_encode($resp); // Return response
-			exit; // Ensure no further code is executed
+			echo json_encode($resp);
+			exit;
 		}
 	
 		// Prepare data for insertion into sales table
@@ -567,39 +555,48 @@ class Master extends DBConnection
 	
 			if ($stockCheckResult === false) {
 				$resp['msg'] = "Database error: " . $this->conn->error;
-				echo json_encode($resp); // Return response
-				exit; // Ensure no further code is executed
+				echo json_encode($resp);
+				exit;
 			}
 	
 			if ($stockCheckResult->num_rows > 0) {
 				// Stock entry exists, update the available_stocks
 				$stockRow = $stockCheckResult->fetch_assoc();
-				$new_stock = $stockRow['available_stocks'] - $quantity; // Subtract quantity from available stocks
+				$new_stock = $stockRow['available_stocks'] - $quantity;
 				if ($new_stock < 0) {
 					$resp['msg'] = "Insufficient stock available.";
-					echo json_encode($resp); // Return response
-					exit; // Ensure no further code is executed
+					echo json_encode($resp);
+					exit;
 				}
 				$updateStockSql = "UPDATE `stocks` SET `available_stocks` = '$new_stock', `date_updated` = CURRENT_TIMESTAMP WHERE `product_id` = '$product_id'";
 				$this->conn->query($updateStockSql);
 			} else {
-				// Stock entry does not exist
 				$resp['msg'] = "No stock entry found for this product.";
-				echo json_encode($resp); // Return response
-				exit; // Ensure no further code is executed
+				echo json_encode($resp);
+				exit;
 			}
+	
+			// Update `stock_reports` table: deduct quantity from `available_stocks` and add to `stocks_sold` for the product_id
+			$updateStockReportsSql = "
+				UPDATE `stock_reports`
+				SET `available_stocks` = `available_stocks` - '$quantity',
+					`stocks_sold` = `stocks_sold` + '$quantity'
+				WHERE `product_id` = '$product_id'
+			";
+			$this->conn->query($updateStockReportsSql);
 	
 			// Return success response
 			$resp['status'] = 'success';
-			$resp['msg'] = "Sales entry has been successfully added and stocks updated.";
+			$resp['msg'] = "Sales entry has been successfully added, stocks updated, and stock report adjusted.";
 		} else {
 			$resp['msg'] = "An error occurred during the operation.";
-			$resp['err'] = "Error: " . $this->conn->error; // Log the SQL error for debugging
+			$resp['err'] = "Error: " . $this->conn->error;
 		}
 	
-		echo json_encode($resp); // Return the response
+		echo json_encode($resp);
 	}
-
+	
+	
 
 	public function delete_sale()
 	{
@@ -978,11 +975,11 @@ switch ($action) {
 
     case 'save_product':
         echo $Master->save_product();
-        break; // Add break here to avoid falling through
+        break; 
 
     case 'edit_product':
         echo $Master->edit_product();
-        break; // Add break here to avoid falling through
+        break;
 
     case 'sales_entry':
         echo $Master->sales_entry();

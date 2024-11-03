@@ -65,6 +65,14 @@
                           Total Sales 
                         </p>
                       </a>
+                    </li>                    
+                    <li class="nav-item">
+                      <a href="<?php echo base_url ?>admin/?page=reports/stock_report" class="nav-link text-light nav-reports_stock_report">
+                        <i class="nav-icon fas fa-chart-pie"></i>
+                        <p>
+                          Stock Reports
+                        </p>
+                      </a>
                     </li>
                     <?php if($_settings->userdata('type') == 1): ?>
                     <li class="nav-header">Maintenance</li>
