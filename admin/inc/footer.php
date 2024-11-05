@@ -66,7 +66,7 @@
       (by: <a href="mailto:<?php echo $_settings->info('email'); ?>" target="_blank">
         <?php echo $_settings->info('company'); ?>
       </a>)
-    </b> TheBinaryDudes Solutions
+    </b> TheBinaryDudesSolutions
   </div>
 </footer>
 </div>

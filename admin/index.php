@@ -92,7 +92,6 @@
             </div>
             <div class="modal-body rounded-0">
             </div>
-
             <div class="modal-footer center-buttons">
               <button type="button"
                 class="btn btn-primary btn-flat"
@@ -108,8 +107,6 @@
                 Cancel
               </button>
             </div>
-
-
           </div>
         </div>
       </div>
