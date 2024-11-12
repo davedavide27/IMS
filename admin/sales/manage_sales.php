@@ -9,6 +9,25 @@ if (session_status() === PHP_SESSION_NONE) {
 // Check if user is logged in and retrieve user ID
 $user_id = isset($_SESSION['userdata']['id']) ? $_SESSION['userdata']['id'] : null;
 
+// Connect to the GL Code database
+$gl_conn = new mysqli("localhost", "root", "", "u399391754_dbcleaners");
+
+// Check connection
+if ($gl_conn->connect_error) {
+    die("Connection failed: " . $gl_conn->connect_error);
+}
+
+// Fetch GL Codes from the chart_of_accounts table
+$gl_codes = [];
+$gl_query = $gl_conn->query("SELECT code_sub_accountName FROM chart_of_accounts");
+while ($row = $gl_query->fetch_assoc()) {
+    $gl_codes[] = $row['code_sub_accountName'];
+}
+
+// Close GL Code database connection
+$gl_conn->close();
+
+
 // Fetch products and available stocks for dropdown
 $products = [];
 $product_query = $conn->query("SELECT p.*, s.available_stocks FROM `products` p 
@@ -77,104 +96,113 @@ $sales_code = $latest_code ? (intval($latest_code) + 1) : 1; // Auto-increment s
                 <label for="total_price" class="control-label">Total Price</label>
                 <input type="number" step="any" id="total_price" name="total_price" class="form-control form-control-sm form-control-border" value="<?= isset($total_price) ? $total_price : '' ?>" readonly required>
             </div>
+        <div class="form-group col-md-6">
+            <label for="gl_code" class="control-label">GL Code</label>
+            <select id="gl_code" name="gl_code" class="form-control form-control-sm form-control-border" required>
+                <option value="" disabled selected>Select GL Code</option>
+                <?php foreach ($gl_codes as $code): ?>
+                    <option value="<?= $code ?>" <?= isset($gl_code) && $gl_code == $code ? 'selected' : '' ?>><?= $code ?></option>
+                <?php endforeach; ?>
+            </select>
         </div>
+    </div>
     </form>
 </div>
 
 <script>
-$(function() {
-    // Initialize select2 for product dropdown
-    $('#product_id').select2({
-        placeholder: "Please select here",
-        width: "100%",
-        dropdownParent: $('#uni_modal')
-    });
+    $(function() {
+        // Initialize select2 for product dropdown
+        $('#product_id').select2({
+            placeholder: "Please select here",
+            width: "100%",
+            dropdownParent: $('#uni_modal')
+        });
 
-    // Populate price and available stocks on product selection
-    $('#product_id').change(function() {
-        var selectedProduct = $(this).val();
-        var products = <?= $inventory_arr ?>; // Product data passed from PHP
+        // Populate price and available stocks on product selection
+        $('#product_id').change(function() {
+            var selectedProduct = $(this).val();
+            var products = <?= $inventory_arr ?>; // Product data passed from PHP
 
-        if (products[selectedProduct]) {
-            var productData = products[selectedProduct];
-            $('#selling_price').val(productData.selling_price);
-            $('#available_stocks').val(productData.available_stocks);
-            $('#quantity').val(''); // Clear quantity for new input
-            $('#total_price').val(''); // Clear total price
-        } else {
-            $('#selling_price').val('');
-            $('#available_stocks').val('');
-            $('#quantity').val('');
-            $('#total_price').val('');
-        }
-    });
-
-    // Calculate total price on quantity change
-    $('#quantity').on('input', function() {
-        var quantity = parseInt($(this).val()) || 0;
-        var sellingPrice = parseFloat($('#selling_price').val()) || 0;
-
-        // Calculate total price
-        var totalPrice = quantity * sellingPrice;
-        $('#total_price').val(totalPrice.toFixed(2));
-    });
-
-    // Save sales entry form submission handling
-    $('#sales-form').submit(function(e) {
-        e.preventDefault(); // Prevent default form submission
-
-        // Check if entered quantity exceeds available stocks
-        var availableStocks = parseInt($('#available_stocks').val());
-        var enteredQuantity = parseInt($('#quantity').val());
-
-        if (enteredQuantity <= 0) {
-            alert_toast("Please enter a valid quantity.", 'error');
-            return false;
-        }
-
-        if (enteredQuantity > availableStocks) {
-            alert_toast("Entered quantity exceeds available stocks.", 'error');
-            return false;
-        }
-
-        // Prepare data for the AJAX request
-        var formData = {
-            sales_code: $('#sales_code').val(),
-            purchase_date: $('#purchase_date').val(),
-            product_id: $('#product_id').val(),
-            quantity: enteredQuantity,
-            selling_price: $('#selling_price').val(),
-            total_price: $('#total_price').val(),
-            user_id: <?= json_encode($user_id) ?> // Include user_id from PHP
-        };
-
-        // AJAX request to save the sales entry
-        $.ajax({
-            type: "POST",
-            url: _base_url_ + "classes/Master.php?f=sales_entry",
-            data: formData,
-            dataType: "json",
-            success: function(response) {
-                // Handle the response
-                if (response && typeof response === "object") {
-                    if (response.status === 'success') {
-                        alert_toast("Sales entry saved successfully!", 'success');
-                        $('#uni_modal').modal('hide'); // Close the modal
-                        setTimeout(function() {
-                            location.reload(); // Reload the page
-                        }, 1000);
-                    } else {
-                        alert_toast("Error: " + response.msg, 'error');
-                    }
-                } else {
-                    alert_toast("Unexpected response format.", 'error');
-                }
-            },
-            error: function(jqXHR, textStatus, errorThrown) {
-                alert_toast("Request failed: " + textStatus + ", " + errorThrown, 'error');
-                console.error("AJAX error: ", textStatus, errorThrown, jqXHR.responseText);
+            if (products[selectedProduct]) {
+                var productData = products[selectedProduct];
+                $('#selling_price').val(productData.selling_price);
+                $('#available_stocks').val(productData.available_stocks);
+                $('#quantity').val(''); // Clear quantity for new input
+                $('#total_price').val(''); // Clear total price
+            } else {
+                $('#selling_price').val('');
+                $('#available_stocks').val('');
+                $('#quantity').val('');
+                $('#total_price').val('');
             }
         });
+
+        // Calculate total price on quantity change
+        $('#quantity').on('input', function() {
+            var quantity = parseInt($(this).val()) || 0;
+            var sellingPrice = parseFloat($('#selling_price').val()) || 0;
+
+            // Calculate total price
+            var totalPrice = quantity * sellingPrice;
+            $('#total_price').val(totalPrice.toFixed(2));
+        });
+
+        // Save sales entry form submission handling
+        $('#sales-form').submit(function(e) {
+            e.preventDefault(); // Prevent default form submission
+
+            // Check if entered quantity exceeds available stocks
+            var availableStocks = parseInt($('#available_stocks').val());
+            var enteredQuantity = parseInt($('#quantity').val());
+
+            if (enteredQuantity <= 0) {
+                alert_toast("Please enter a valid quantity.", 'error');
+                return false;
+            }
+
+            if (enteredQuantity > availableStocks) {
+                alert_toast("Entered quantity exceeds available stocks.", 'error');
+                return false;
+            }
+
+            // Prepare data for the AJAX request
+            var formData = {
+                sales_code: $('#sales_code').val(),
+                purchase_date: $('#purchase_date').val(),
+                product_id: $('#product_id').val(),
+                quantity: enteredQuantity,
+                selling_price: $('#selling_price').val(),
+                total_price: $('#total_price').val(),
+                user_id: <?= json_encode($user_id) ?> // Include user_id from PHP
+            };
+
+            // AJAX request to save the sales entry
+            $.ajax({
+                type: "POST",
+                url: _base_url_ + "classes/Master.php?f=sales_entry",
+                data: formData,
+                dataType: "json",
+                success: function(response) {
+                    // Handle the response
+                    if (response && typeof response === "object") {
+                        if (response.status === 'success') {
+                            alert_toast("Sales entry saved successfully!", 'success');
+                            $('#uni_modal').modal('hide'); // Close the modal
+                            setTimeout(function() {
+                                location.reload(); // Reload the page
+                            }, 1000);
+                        } else {
+                            alert_toast("Error: " + response.msg, 'error');
+                        }
+                    } else {
+                        alert_toast("Unexpected response format.", 'error');
+                    }
+                },
+                error: function(jqXHR, textStatus, errorThrown) {
+                    alert_toast("Request failed: " + textStatus + ", " + errorThrown, 'error');
+                    console.error("AJAX error: ", textStatus, errorThrown, jqXHR.responseText);
+                }
+            });
+        });
     });
-});
 </script>
