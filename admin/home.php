@@ -96,7 +96,7 @@ $profit = ($total_sales ?? 0) - ($total_purchase ?? 0);
         <div class="info-box bg-gradient-light shadow">
             <span class="info-box-icon bg-gradient-info elevation-1"><i class="fas fa-shopping-cart"></i></span>
             <div class="info-box-content">
-                <span class="info-box-text">Inventory Entries</span>
+                <span class="info-box-text">Purchase Entries</span>
                 <span class="info-box-number text-right">
                     <?php echo $conn->query("SELECT * FROM `inventory_entries`")->num_rows; ?>
                 </span>
@@ -118,31 +118,40 @@ $profit = ($total_sales ?? 0) - ($total_purchase ?? 0);
             </div>
         </div>
     </div>
-    <!-- Profit Box -->
+
+
+    <!-- Available Stocks -->
     <div class="col-12 col-sm-12 col-md-6 col-lg-4">
         <div class="info-box bg-gradient-light shadow">
-            <span class="info-box-icon bg-gradient-warning elevation-1"><i class="fas fa-coins"></i></span>
+            <span class="info-box-icon bg-gradient-warning elevation-1"><i class="fas fa-boxes"></i></span>
             <div class="info-box-content">
-                <span class="info-box-text">Profit</span>
+                <span class="info-box-text">Available Stocks in Quantity</span>
                 <span class="info-box-number text-right">
                     <?php
-                    if ($profit < 0) {
-                        echo "No profit";
-                    } else {
-                        echo '₱ ' . format_num($profit);
+                    // Query to calculate the total available stocks
+                    $total_stocks = 0; // Default to 0 in case of error or empty result
+                    $query = "SELECT SUM(available_stocks) AS total_stocks FROM stocks";
+                    $result = $conn->query($query);
+
+                    if ($result) {
+                        $row = $result->fetch_assoc();
+                        $total_stocks = $row['total_stocks'] ?? 0; // Use 0 if NULL
                     }
+
+                    echo $total_stocks > 0 ? $total_stocks : "No stocks available";
                     ?>
                 </span>
             </div>
         </div>
     </div>
 
+
     <!-- Profit Box -->
     <div class="col-12 col-sm-12 col-md-6 col-lg-4">
         <div class="info-box bg-gradient-light shadow">
             <span class="info-box-icon bg-gradient-danger elevation-1"><i class="fas fa-money-bill-wave"></i></span>
             <div class="info-box-content">
-                <span class="info-box-text">Deficit</span>
+                <span class="info-box-text">Deficit <!-- Ending inventory amount In peso--></span>
                 <span class="info-box-number text-right">
                     <?php
                     if ($profit < 0) {
@@ -163,3 +172,10 @@ $profit = ($total_sales ?? 0) - ($total_purchase ?? 0);
         <img src="<?= validate_image($_settings->info('cover')) ?>" alt="Website Page" id="banner-img" class="w-100">
     </div>
 </div>
+<!--
+<div class="row">
+    <div class="col-md-12">
+        <img src="<?//= validate_image($_settings->info('cover')) ?>" alt="Website Page" id="banner-img" class="w-100" style="height: auto; max-width: 100%; object-fit: cover;">
+    </div>
+</div>
+-->

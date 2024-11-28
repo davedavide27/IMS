@@ -86,7 +86,7 @@ $inventory_arr = json_encode($products);
         </div>
         <div class="row">
             <div class="col-md-12 form-group">
-                <label for="remarks" class="control-label">Remarks</label> <!-- New label for remarks -->
+                <label for="remarks" class="control-label">PO Number</label> <!-- New label for remarks -->
                 <textarea rows="2" id="remarks" name="remarks" class="form-control form-control-sm rounded-0"><?= isset($remarks) ? $remarks : "" ?></textarea> <!-- New textarea for remarks -->
             </div>
         </div>

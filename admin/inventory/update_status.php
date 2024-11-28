@@ -2,13 +2,13 @@
 <!--
 <div class="container-fluid">
     <form action="" id="update-form">
-        <input type="hidden" name="id" value="<?= isset($_GET['id']) ? $_GET['id'] : '' ?>">
+        <input type="hidden" name="id" value="<//?= isset($_GET['id']) ? $_GET['id'] : '' ?>">
             <div class="form-group">
                 <small class="text-muted ">Status</small>
                 <select name="status" id="status" class="form-control form-control-sm form-control-border" required>
-                    <option value="0" <?= isset($status) && $status == 0 ? "selected" : "" ?>>Pending</option>
-                    <option value="1" <?= isset($status) && $status == 1 ? "selected" : "" ?>>Confirmed</option>
-                    <option value="2" <?= isset($status) && $status == 2 ? "selected" : "" ?>>Cancelled</option>
+                    <option value="0" <//?= isset($status) && $status == 0 ? "selected" : "" ?>>Pending</option>
+                    <option value="1" <//?= isset($status) && $status == 1 ? "selected" : "" ?>>Confirmed</option>
+                    <option value="2" <//?= isset($status) && $status == 2 ? "selected" : "" ?>>Cancelled</option>
                 </select>
             </div>
     </form>
@@ -52,3 +52,4 @@
     });
 </script>
 -->
+

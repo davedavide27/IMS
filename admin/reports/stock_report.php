@@ -27,12 +27,13 @@ if ($page < 1) {
 }
 $offset = ($page - 1) * $limit;
 
-// Count total records using the correct column name and product filter
-$total_query = $conn->query("SELECT COUNT(*) as total FROM stock_reports sr 
-    WHERE sr.report_datetime BETWEEN '{$from}' AND '{$to}'" . ($product_id ? " AND sr.product_id = '{$product_id}'" : ""));
-$total_row = $total_query->fetch_assoc();
-$total_records = $total_row['total'];
-$total_pages = ceil($total_records / $limit);
+$total_query = $conn->query(
+    "SELECT COUNT(*) as total FROM inventory_entries ie 
+    INNER JOIN products p ON ie.product_id = p.id 
+    INNER JOIN stocks s ON ie.product_id = s.product_id 
+    WHERE ie.entry_date BETWEEN '{$from}' AND '{$to}'" . 
+    ($product_id ? " AND ie.product_id = {$product_id}" : "")
+);
 
 // Initialize variables for totals
 $total_stock_entries = 0;
@@ -41,14 +42,15 @@ $total_stocks_sold = 0;
 $total_purchase_price = 0;
 $total_selling_price = 0;
 
-// Select stock reports using the correct column name and product filter
 $stock_reports_result = $conn->query("SELECT sr.id, sr.report_datetime, sr.product_id, p.name as product_name, 
     sr.stock_entries, sr.available_stocks, sr.stocks_sold, sr.status, sr.entry_type,
     p.purchase_price, p.selling_price
 FROM stock_reports sr 
 INNER JOIN products p ON sr.product_id = p.id 
-WHERE sr.report_datetime BETWEEN '{$from}' AND '{$to}'" . ($product_id ? " AND sr.product_id = '{$product_id}'" : "") . "
-ORDER BY sr.report_datetime ASC LIMIT $limit OFFSET $offset");
+WHERE sr.report_datetime BETWEEN '{$from}' AND '{$to}'" . 
+    ($product_id ? " AND sr.product_id = '{$product_id}'" : "") . "
+ORDER BY sr.report_datetime ASC");
+
 
 // Initialize variables for stock entries
 $stock_entries = [];
@@ -82,6 +84,8 @@ function get_product_by_id($product_id)
 $stock_entries_json = json_encode($stock_entries);
 ?>
 
+
+
 <style>
     @media print {
         .container {
@@ -114,6 +118,43 @@ $stock_entries_json = json_encode($stock_entries);
             border: 1px solid #000;
             padding: 5px;
         }
+
+        /* Styles for Status and Entry Type without box/badge effect */
+        .status-available {
+            color: #007bff;
+            /* Primary blue color */
+            font-weight: bold;
+        }
+
+        .status-deleted {
+            color: #dc3545;
+            /* Danger red color */
+            font-weight: bold;
+        }
+
+        .status-unknown {
+            color: #ffc107;
+            /* Warning yellow color */
+            font-weight: bold;
+        }
+
+        .type-inventory {
+            color: #007bff;
+            /* Primary blue color */
+            font-weight: bold;
+        }
+
+        .type-sales {
+            color: #dc3545;
+            /* Danger red color */
+            font-weight: bold;
+        }
+
+        .type-unknown {
+            color: #ffc107;
+            /* Warning yellow color */
+            font-weight: bold;
+        }
     }
 
     th.p-0,
@@ -121,6 +162,8 @@ $stock_entries_json = json_encode($stock_entries);
         padding: 0 !important;
     }
 </style>
+
+
 
 <div class="card card-outline card-primary">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
@@ -201,29 +244,27 @@ $stock_entries_json = json_encode($stock_entries);
                             <td class="text-center"><?= format_num($entry['stock_entries']) ?></td>
                             <td class="text-center"><?= format_num($entry['available_stocks']) ?></td>
                             <td class="text-center"><?= format_num($entry['stocks_sold']) ?></td>
-                            <td class="text-center"><?= format_num($entry['stock_entries'] * $entry['purchase_price']) ?></td>
-                            <td class="text-center"><?= format_num($entry['stocks_sold'] * $entry['selling_price']) ?></td>
+                            <td class="text-center">₱<?= format_num($entry['stock_entries'] * $entry['purchase_price']) ?></td>
+                            <td class="text-center">₱<?= format_num($entry['stocks_sold'] * $entry['selling_price']) ?></td>
                             <td class="text-center">
                                 <?php
-                                // Check if the 'status' index exists and is not null
                                 if (isset($entry['status'])) {
                                     echo $entry['status'] == 1
                                         ? '<span class="badge badge-primary bg-gradient-primary">Available</span>'
                                         : '<span class="badge badge-danger bg-gradient-danger">Deleted</span>';
                                 } else {
-                                    echo '<span class="badge badge-warning">Unknown Status</span>'; // or handle as appropriate
+                                    echo '<span class="badge badge-warning">Unknown Status</span>';
                                 }
                                 ?>
                             </td>
                             <td class="text-center">
                                 <?php
-                                // Check if the 'entry_type' index exists and is not null
                                 if (isset($entry['entry_type'])) {
                                     echo $entry['entry_type'] == 1
                                         ? '<span class="badge badge-primary bg-gradient-primary">Inventory</span>'
                                         : '<span class="badge badge-danger bg-gradient-danger">Sales</span>';
                                 } else {
-                                    echo '<span class="badge badge-warning">Unknown Type</span>'; // or handle as appropriate
+                                    echo '<span class="badge badge-warning">Unknown Type</span>';
                                 }
                                 ?>
                             </td>
@@ -238,14 +279,19 @@ $stock_entries_json = json_encode($stock_entries);
             <script>
                 $(document).ready(function() {
                     $('#reportsTable').DataTable({
+                        paging: true, // Ensure pagination is enabled
+                        pageLength: 10, // Number of rows per page
+                        lengthChange: true, // Allow the user to change the number of rows per page
+                        lengthMenu: [10, 25, 50, 100], // Option to change the number of rows shown per page
                         columnDefs: [{
                             orderable: false,
-                            targets: [3] // Make specific columns non-orderable
+                            targets: [3]
                         }],
                         search: {
-                            caseInsensitive: true // Case-insensitive search
+                            caseInsensitive: true
                         }
                     });
+
 
                     $('#filter').submit(function(e) {
                         e.preventDefault();

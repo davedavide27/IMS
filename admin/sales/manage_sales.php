@@ -92,20 +92,27 @@ $sales_code = $latest_code ? (intval($latest_code) + 1) : 1; // Auto-increment s
             </div>
         </div>
         <div class="row">
+            <div class="col-md-12 form-group">
+                <label for="po_number" class="control-label">PO Number</label>
+                <textarea rows="2" id="po_number" name="po_number" class="form-control form-control-sm rounded-0" required><?= isset($po_number) ? htmlspecialchars($po_number, ENT_QUOTES) : "" ?></textarea>
+            </div>
+        </div>
+
+        <div class="row">
             <div class="form-group col-md-6">
                 <label for="total_price" class="control-label">Total Price</label>
                 <input type="number" step="any" id="total_price" name="total_price" class="form-control form-control-sm form-control-border" value="<?= isset($total_price) ? $total_price : '' ?>" readonly required>
             </div>
-        <div class="form-group col-md-6">
-            <label for="gl_code" class="control-label">GL Code</label>
-            <select id="gl_code" name="gl_code" class="form-control form-control-sm form-control-border" required>
-                <option value="" disabled selected>Select GL Code</option>
-                <?php foreach ($gl_codes as $code): ?>
-                    <option value="<?= $code ?>" <?= isset($gl_code) && $gl_code == $code ? 'selected' : '' ?>><?= $code ?></option>
-                <?php endforeach; ?>
-            </select>
+            <div class="form-group col-md-6">
+                <label for="gl_code" class="control-label">GL Code</label>
+                <select id="gl_code" name="gl_code" class="form-control form-control-sm form-control-border" required>
+                    <option value="" disabled selected>Select GL Code</option>
+                    <?php foreach ($gl_codes as $code): ?>
+                        <option value="<?= $code ?>" <?= isset($gl_code) && $gl_code == $code ? 'selected' : '' ?>><?= $code ?></option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
         </div>
-    </div>
     </form>
 </div>
 
@@ -173,6 +180,7 @@ $sales_code = $latest_code ? (intval($latest_code) + 1) : 1; // Auto-increment s
                 quantity: enteredQuantity,
                 selling_price: $('#selling_price').val(),
                 total_price: $('#total_price').val(),
+                po_number: $('#po_number').val(), // Include PO Number
                 user_id: <?= json_encode($user_id) ?> // Include user_id from PHP
             };
 

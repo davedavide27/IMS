@@ -36,7 +36,7 @@ $total_query = $conn->query(
 );
 $total_row = $total_query->fetch_assoc();
 $total_records = $total_row['total'];
-$total_pages = ceil($total_records / $limit);
+$total_pages = ceil($total_records);
 
 // Initialize variables for totals
 $total_purchase = 0;
@@ -53,11 +53,10 @@ FROM inventory_entries ie
 INNER JOIN products p ON ie.product_id = p.id 
 INNER JOIN stocks s ON ie.product_id = s.product_id 
 WHERE ie.entry_date BETWEEN '{$from}' AND '{$to}'" .
-    ($product_filter ? " AND ie.product_id = {$product_filter}" : "") .
-    " LIMIT $limit OFFSET $offset";
+    ($product_filter ? " AND ie.product_id = {$product_filter}" : "");
 $inventory = $conn->query($inventory_sql);
 
-// Fetch sales data based on the date range, selected product, and pagination
+
 $sales_sql = "SELECT s.purchase_date, p.id AS product_id, p.name as product_name, 
 s.quantity, s.selling_price, 
 (s.selling_price * s.quantity) as total_sales,
@@ -66,9 +65,9 @@ FROM sales s
 INNER JOIN products p ON s.product_id = p.id 
 INNER JOIN stocks stk ON s.product_id = stk.product_id 
 WHERE s.purchase_date BETWEEN '{$from}' AND '{$to}'" .
-    ($product_filter ? " AND s.product_id = {$product_filter}" : "") .
-    " LIMIT $limit OFFSET $offset";
+    ($product_filter ? " AND s.product_id = {$product_filter}" : "");
 $sales_query = $conn->query($sales_sql);
+
 
 // Initialize variables for totals
 $total_quantity_sold = 0;
@@ -198,9 +197,9 @@ $sales_items_json = json_encode($sales_items);
                             <td><?= date("M d, Y", strtotime($row['purchase_date'])) ?></td>
                             <td><?= $row['product_name'] ?></td>
                             <td class="text-right"><?= format_num($row['quantity']) ?></td>
-                            <td class="text-right"><?= format_num($row['selling_price']) ?></td>
+                            <td class="text-right">₱<?= format_num($row['selling_price']) ?></td>
                             <td class="text-right"><?= format_num($row['available_stocks']) ?></td>
-                            <td class="text-right"><?= format_num($row['total_sales']) ?></td>
+                            <td class="text-right">₱<?= format_num($row['total_sales']) ?></td>
                         </tr>
                     <?php endforeach; ?>
                 </tbody>

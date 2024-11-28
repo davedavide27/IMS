@@ -1,0 +1,175 @@
+/* Global Styles */
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: #f4f4f9;
+}
+
+.purchase-order {
+    width: 900px;
+    margin: 30px auto;
+    border: 1px solid #ccc;
+    background: #fff;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    padding: 20px;
+    min-height: 1200px;  /* Set minimum height */
+    max-height: 200%;   /* Allow the container to grow */
+    overflow: hidden;   /* Ensure no content overflows */
+    box-sizing: border-box;  /* Include padding in the element's total width and height */
+}
+
+/* Header Section */
+header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 3px solid #333;
+    padding-bottom: 10px;
+}
+
+.logo {
+    background-color: #333;
+    color: white;
+    padding: 10px 20px;
+    border-radius: 5px;
+}
+
+.logo h1 {
+    font-size: 24px;
+    margin: 0;
+}
+
+.title h2 {
+    font-size: 28px;
+    margin: 0;
+    color: #000;
+}
+
+/* PO Details */
+.po-details {
+    margin: 20px 0;
+    font-size: 14px;
+}
+
+.po-details p {
+    margin: 5px 0;
+}
+
+/* Address Section */
+.address-section {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 20px;
+}
+
+.address-section .to,
+.address-section .ship-to {
+    width: 45%;
+}
+
+.address-section h3 {
+    font-size: 16px;
+    margin-bottom: 10px;
+}
+
+/* Shipment and Item Details */
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 20px 0;
+}
+
+th, td {
+    text-align: left;
+    padding: 8px;
+    border: 1px solid #ccc;
+}
+
+th {
+    background-color: #f0f0f0;
+    font-weight: bold;
+}
+
+/* Remarks Section */
+.remarks {
+    margin: 20px 0;
+}
+
+.remarks textarea {
+    width: calc(100% - 10px);
+    padding: 10px;
+    border: 1px solid #ccc;
+    font-family: Arial, sans-serif;
+}
+
+/* Totals Section */
+.totals {
+    margin-top: 20px;
+}
+
+.totals table {
+    width: 50%;
+    float: right;
+}
+
+.totals td {
+    text-align: right;
+    padding: 8px 10px;
+}
+
+.totals td:first-child {
+    text-align: left;
+}
+
+.totals tr:last-child {
+    font-weight: bold;
+}
+
+/* Footer */
+footer {
+    text-align: center;
+    margin-top: 40px;
+    font-size: 12px;
+    color: #666;
+}
+
+footer p {
+    margin: 5px 0;
+}
+
+/* Print Button */
+.print-button {
+    text-align: center;
+    margin-top: 20px;
+}
+
+.print-button button {
+    background-color: #333;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    font-size: 16px;
+    cursor: pointer;
+    border-radius: 5px;
+}
+
+.print-button button:hover {
+    background-color: #555;
+}
+
+/* Print-Specific Styles */
+@media print {
+    body {
+        background: none;
+    }
+
+    .purchase-order {
+        box-shadow: none;
+        border: none;
+    }
+
+    .print-button {
+        display: none; /* Hide the print button when printing */
+    }
+}

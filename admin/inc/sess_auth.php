@@ -22,20 +22,34 @@ if (isset($_SESSION['userdata']) && strpos($link, 'login.php')) {
     redirect('admin/index.php'); // Redirect to index if user is already logged in
 }
 
-// Define modules for access control
-$module = array('', 'admin', 'faculty', 'student');
+// Define modules for access control, adding 'manager' module (index 3)
+$module = array('', 'admin', 'faculty', 'student', 'manager');
 
-// Check access permissions for admin pages
+// Check access permissions for admin and manager pages
 if (isset($_SESSION['userdata'])) {
     // Store the user ID as user_id in the session for further use
     $_SESSION['user_id'] = $_SESSION['userdata']['id']; // Store user ID for later use
 
-    // Check user access permissions
-    if (strpos($link, 'index.php') || strpos($link, 'admin/')) {
-        // Check user type
-        if ($_SESSION['userdata']['login_type'] != 1) {
-            echo "<script>alert('Access Denied!');location.replace('" . base_url . $module[$_SESSION['userdata']['login_type']] . "');</script>";
+    // Get the current user type
+    $userType = $_SESSION['userdata']['login_type'];
+
+    // Check access to index.php, admin pages, or manager pages
+    if (strpos($link, 'index.php') || strpos($link, 'admin/') || strpos($link, 'manager/')) {
+        
+        if ($userType == 1) {
+            // Admin: full access
+            // No restrictions for admins
+        } elseif ($userType == 3) {
+            // Manager: check if they are trying to access manager-specific pages
+            if (!strpos($link, 'admin/')) {
+                echo "<script>alert('Access Denied for Managers!');location.replace('" . base_url . "manager');</script>";
+                exit;
+            }
+        } elseif ($userType != 2) {
+            // Faculty or Student: they are not allowed to access admin or manager pages
+            echo "<script>alert('Access Denied!');location.replace('" . base_url . $module[$userType] . "');</script>";
             exit;
         }
     }
 }
+?>

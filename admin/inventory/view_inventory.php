@@ -52,7 +52,7 @@ if (isset($_GET['id'])) {
         </dd>
 
         <!-- Description -->
-        <dt class="text-muted">Remarks</dt>
+        <dt class="text-muted">PO Number</dt>
         <dd class='pl-4'>
             <p class=""><?= isset($remarks) ? $remarks : 'N/A' ?></p>
         </dd>
@@ -66,8 +66,29 @@ if (isset($_GET['id'])) {
         <!-- Total Price -->
         <dt class="text-muted">Total Price</dt>
         <dd class='pl-4'>
-            <p class=""><?= isset($total_price) ? number_format($total_price, 2) : 'N/A' ?></p>
+            <p class="">₱<?= isset($total_price) ? number_format($total_price, 2) : 'N/A' ?></p>
         </dd>
+
+        <!-- Status -->
+        <dt class="text-muted">Status</dt>
+        <dd class='pl-4'>
+            <p class="">
+                <?php
+                if (isset($status)) {
+                    if ($status == 1) {
+                        echo "Approved";
+                    } elseif ($status == 2) {
+                        echo "Denied";
+                    } else {
+                        echo "No Status";
+                    }
+                } else {
+                    echo "N/A";
+                }
+                ?>
+            </p>
+        </dd>
+
 
         <!-- Recorded By -->
         <dt class="text-muted">Recorded By</dt>

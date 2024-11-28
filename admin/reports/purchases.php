@@ -4,7 +4,6 @@
 $from = isset($_GET['from']) ? $_GET['from'] : date("Y-m-d", strtotime(date('Y-m-d') . " -1 month"));
 $to = isset($_GET['to']) ? $_GET['to'] : date("Y-m-d");
 
-
 // Filter to fetch all products (not limited by date)
 $product_query = $conn->query("SELECT DISTINCT p.id, p.name FROM products p
     ORDER BY p.name ASC");
@@ -22,14 +21,6 @@ function format_num($number)
     $decimals = isset($num_ex[1]) ? strlen($num_ex[1]) : 0;
     return number_format($number, $decimals);
 }
-
-// Pagination variables
-$limit = 10; // Number of records per page
-$page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
-if ($page < 1) {
-    $page = 1; // Ensure page is at least 1
-}
-$offset = ($page - 1) * $limit;
 
 // Initialize variables for totals
 $total_purchase = 0;
@@ -50,9 +41,10 @@ $total_query = $conn->query("SELECT COUNT(*) as total FROM inventory_entries ie
 
 $total_row = $total_query->fetch_assoc();
 $total_records = $total_row['total'];
-$total_pages = ceil($total_records / $limit);
+// Since we are fetching all records, we no longer need pagination
+$total_pages = 1; // No pagination
 
-// Main inventory query with date and product filters
+// Main inventory query with date and product filters (without LIMIT and OFFSET)
 $inventory = $conn->query("SELECT ie.entry_date, p.id AS product_id, p.name as product_name, ie.description, 
     p.purchase_price, p.selling_price, 
     LEAST(ie.quantity, s.available_stocks) as quantity, 
@@ -61,8 +53,7 @@ $inventory = $conn->query("SELECT ie.entry_date, p.id AS product_id, p.name as p
 FROM inventory_entries ie 
 INNER JOIN products p ON ie.product_id = p.id 
 INNER JOIN stocks s ON ie.product_id = s.product_id 
-WHERE ie.entry_date BETWEEN '{$from}' AND '{$to}' {$product_filter}
-LIMIT $limit OFFSET $offset");
+WHERE ie.entry_date BETWEEN '{$from}' AND '{$to}' {$product_filter}");
 
 // Fetch data and calculate totals
 $inventory_items = [];
@@ -71,8 +62,12 @@ while ($row = $inventory->fetch_assoc()) {
     $total_selling += $row['total_selling'];
     $inventory_items[] = $row; // Store each row
 }
+
+// Convert inventory data to JSON (optional, based on usage)
 $inventory_items_json = json_encode($inventory_items);
+
 ?>
+
 
 
 <style>
@@ -176,19 +171,19 @@ $inventory_items_json = json_encode($inventory_items);
                     <div class="col-md-4">
                         <div class="bg-light p-2 rounded shadow">
                             <h5>Remaining Purchase</h5>
-                            <p class="text-right"><?= format_num($total_purchase) ?></p>
+                            <p class="text-right">₱ <?= format_num($total_purchase) ?></p>
                         </div>
                     </div>
                     <div class="col-md-4">
                         <div class="bg-light p-2 rounded shadow">
                             <h5>Remaining Sales</h5>
-                            <p class="text-right"><?= format_num($total_selling) ?></p>
+                            <p class="text-right">₱ <?= format_num($total_selling) ?></p>
                         </div>
                     </div>
                     <div class="col-md-4">
                         <div class="bg-light p-2 rounded shadow">
                             <h5>Remaining Profit</h5>
-                            <p class="text-right"><?= format_num($total_selling - $total_purchase) ?></p>
+                            <p class="text-right">₱ <?= format_num($total_selling - $total_purchase) ?></p>
                         </div>
                     </div>
                 </div>
@@ -212,7 +207,7 @@ $inventory_items_json = json_encode($inventory_items);
                             <td><?= date("M d, Y", strtotime($row['entry_date'])) ?></td>
                             <td><?= $row['product_name'] ?></td>
                             <td><?= $row['description'] ?></td>
-                            <td class="text-right"><?= format_num($row['purchase_price']) ?></td>
+                            <td class="text-right">₱<?= format_num($row['purchase_price']) ?></td>
                             <td class="text-right"><?= format_num($row['quantity']) ?></td>
                         </tr>
                     <?php endforeach; ?>
