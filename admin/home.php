@@ -96,6 +96,23 @@ $profit = ($total_sales ?? 0) - ($total_purchase ?? 0);
         <div class="info-box bg-gradient-light shadow">
             <span class="info-box-icon bg-gradient-info elevation-1"><i class="fas fa-shopping-cart"></i></span>
             <div class="info-box-content">
+                <span class="info-box-text">Products In Stock</span>
+                <span class="info-box-number text-right">
+                    <?php
+                    // Count products with more than 0 stocks in the 'stocks' table
+                    $result = $conn->query("SELECT COUNT(*) AS product_count FROM stocks WHERE available_stocks > 0");
+                    $row = $result->fetch_assoc();
+                    echo $row['product_count'];
+                    ?>
+                </span>
+            </div>
+        </div>
+    </div>
+<!--
+    <div class="col-12 col-sm-12 col-md-6 col-lg-4">
+        <div class="info-box bg-gradient-light shadow">
+            <span class="info-box-icon bg-gradient-info elevation-1"><i class="fas fa-shopping-cart"></i></span>
+            <div class="info-box-content">
                 <span class="info-box-text">Purchase Entries</span>
                 <span class="info-box-number text-right">
                     <?php echo $conn->query("SELECT * FROM `inventory_entries`")->num_rows; ?>
@@ -103,7 +120,10 @@ $profit = ($total_sales ?? 0) - ($total_purchase ?? 0);
             </div>
         </div>
     </div>
+    -->
+
 </div>
+    
 
 <!-- New row for Total Purchases and Profit -->
 <div class="row mt-3">
@@ -175,7 +195,8 @@ $profit = ($total_sales ?? 0) - ($total_purchase ?? 0);
 <!--
 <div class="row">
     <div class="col-md-12">
-        <img src="<?//= validate_image($_settings->info('cover')) ?>" alt="Website Page" id="banner-img" class="w-100" style="height: auto; max-width: 100%; object-fit: cover;">
+        <img src="<? //= validate_image($_settings->info('cover')) 
+                    ?>" alt="Website Page" id="banner-img" class="w-100" style="height: auto; max-width: 100%; object-fit: cover;">
     </div>
 </div>
 -->
