@@ -1,12 +1,16 @@
 <?php
+// Function to format numbers with the correct number of decimal places
 function format_num($number)
 {
     $decimals = 0;
-    $num_ex = explode('.', $number);
-    $decimals = isset($num_ex[1]) ? strlen($num_ex[1]) : 0;
+    if (strpos($number, '.') !== false) {
+        $num_ex = explode('.', $number);
+        $decimals = isset($num_ex[1]) ? strlen($num_ex[1]) : 0;
+    }
     return number_format($number, $decimals);
 }
 ?>
+
 <?php
 // Initialize $swhere as an empty string
 $swhere = "";
@@ -14,18 +18,44 @@ $swhere = "";
 // Check if the user is not an Admin (type 1) or Manager (type 3)
 if ($_settings->userdata('type') != 1 && $_settings->userdata('type') != 3) {
     // Filter based on the logged-in user's ID
-    $swhere = " WHERE user_id = '{$_settings->userdata('id')}' ";
+    $user_id = $_settings->userdata('id'); // Fetch user ID
+    $swhere = " WHERE user_id = '" . $conn->real_escape_string($user_id) . "' ";
 }
 
 // Fetch user details for mapping
-$users = $conn->query("SELECT id, username FROM `users` WHERE id IN (SELECT `user_id` FROM `sales` {$swhere})");
-$user_arr = array_column($users->fetch_all(MYSQLI_ASSOC), 'username', 'id');
+$user_arr = array(); // Initialize an empty array to store user data
+$user_query = $conn->query("SELECT id, username FROM `users` WHERE id IN (SELECT `user_id` FROM `sales` {$swhere})");
+if ($user_query) {
+    while ($row = $user_query->fetch_assoc()) {
+        $user_arr[$row['id']] = $row['username']; // Map user ID to username
+    }
+}
 
 // Fetch sales entries with optional filter
-$sales = $conn->query("SELECT s.id, s.purchase_date, s.product_id, s.quantity, s.sales_code, s.selling_price, s.user_id, s.status, s.po_number 
-FROM `sales` s {$swhere} ORDER BY date(s.purchase_date) ASC");
+$sales = $conn->query("
+    SELECT 
+        s.id, 
+        s.purchase_date, 
+        s.product_id, 
+        s.quantity, 
+        s.sales_code, 
+        s.selling_price, 
+        s.user_id, 
+        s.status, 
+        s.po_number 
+    FROM 
+        `sales` s 
+    {$swhere} 
+    ORDER BY 
+        DATE(s.purchase_date) ASC
+");
 
+// Ensure the query was successful
+if (!$sales) {
+    die("Error fetching sales data: " . $conn->error);
+}
 ?>
+
 
 
 <script>
@@ -40,14 +70,9 @@ FROM `sales` s {$swhere} ORDER BY date(s.purchase_date) ASC");
     }
 </style>
 <div class="card card-outline card-primary">
-
     <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
-        <!-- Left Section (Title) -->
         <h3 class="card-title">Sales Entries</h3>
-
-        <!-- Centered Section (Filter and Print Buttons) -->
         <div style="display: flex; align-items: center; gap: 15px; justify-content: center;">
-            <!-- Filter by PO Number -->
             <form id="filterForm" class="form-inline" style="display: inline-block;">
                 <div class="input-group">
                     <input type="text" class="form-control form-control-sm" id="po_number_filter" placeholder="Filter by PO Number">
@@ -56,13 +81,10 @@ FROM `sales` s {$swhere} ORDER BY date(s.purchase_date) ASC");
                     </div>
                 </div>
             </form>
-            <!-- Print Button -->
             <button class="btn btn-secondary btn-flat btn-sm" id="printButton" type="button" onclick="submitPrintForm()">
                 <i class="fa fa-print"></i> Print
             </button>
         </div>
-
-        <!-- Right Section (Add New Button) -->
         <div class="card-tools" style="position: absolute; right: 0; padding-right: 20px;">
             <button class="btn btn-primary btn-flat btn-sm" id="create_new" type="button">
                 <i class="fa fa-pen-square"></i> Add New Sales Entry
@@ -73,14 +95,14 @@ FROM `sales` s {$swhere} ORDER BY date(s.purchase_date) ASC");
         <div class="container-fluid">
             <table class="table table-hover table-striped table-bordered" id="salesTable">
                 <colgroup>
-                    <col width="15%"> <!-- Purchase Date -->
-                    <col width="20%"> <!-- Product -->
-                    <col width="10%"> <!-- Quantity -->
-                    <col width="10%"> <!-- Price -->
-                    <col width="10%"> <!-- Total -->
-                    <col width="8%"> <!-- Total -->
-                    <col width="15%"> <!-- Recorded By -->
-                    <col width="10%"> <!-- Action -->
+                    <col width="15%">
+                    <col width="20%">
+                    <col width="10%">
+                    <col width="10%">
+                    <col width="10%">
+                    <col width="8%">
+                    <col width="15%">
+                    <col width="10%">
                 </colgroup>
                 <thead>
                     <tr>
@@ -97,87 +119,78 @@ FROM `sales` s {$swhere} ORDER BY date(s.purchase_date) ASC");
                 </thead>
                 <tbody>
                     <?php
-                    // Adjust condition to allow both Admin (type 1) and Manager (type 3) to see all entries
+                    // Check user type and set conditions
                     $swhere = "";
-                    if ($_settings->userdata('type') != 1 && $_settings->userdata('type') != 3) { // For non-admins and non-managers
-                        $swhere = " WHERE user_id = '{$_settings->userdata('id')}' "; // Filter based on logged-in user's ID
+                    if ($_settings->userdata('type') != 1 && $_settings->userdata('type') != 3) {
+                        $swhere = " WHERE user_id = '" . $conn->real_escape_string($_settings->userdata('id')) . "' ";
                     }
 
                     // Fetch user details
-                    $users = $conn->query("SELECT id, username FROM `users` WHERE id IN (SELECT `user_id` FROM `sales` {$swhere})");
-                    $user_arr = array_column($users->fetch_all(MYSQLI_ASSOC), 'username', 'id');
+                    $user_arr = array();
+                    $users_query = $conn->query("SELECT id, username FROM `users` WHERE id IN (SELECT `user_id` FROM `sales` {$swhere})");
+                    if ($users_query) {
+                        while ($row = $users_query->fetch_assoc()) {
+                            $user_arr[$row['id']] = $row['username'];
+                        }
+                    }
 
-                    $sales = $conn->query("SELECT s.id, s.purchase_date, s.product_id, s.quantity, s.sales_code, s.selling_price, s.user_id, s.status, s.po_number 
-                    FROM `sales` s {$swhere} ORDER BY date(s.purchase_date) ASC");
+                    // Fetch sales entries
+                    $sales_query = $conn->query("SELECT s.id, s.purchase_date, s.product_id, s.quantity, s.sales_code, s.selling_price, s.user_id, s.status, s.po_number 
+                    FROM `sales` s {$swhere} ORDER BY DATE(s.purchase_date) ASC");
 
-
-                    while ($row = $sales->fetch_assoc()):
-                        // Fetch product details
-                        $product = $conn->query("SELECT name FROM products WHERE id = '{$row['product_id']}'")->fetch_assoc();
-                        $total_price = $row['quantity'] * $row['selling_price']; // Use selling_price instead of price
+                    if ($sales_query) {
+                        while ($row = $sales_query->fetch_assoc()):
+                            // Fetch product details
+                            $product_query = $conn->query("SELECT name FROM `products` WHERE id = '" . $conn->real_escape_string($row['product_id']) . "'");
+                            $product = $product_query ? $product_query->fetch_assoc() : array('name' => 'Unknown');
+                            $total_price = $row['quantity'] * $row['selling_price'];
                     ?>
-                        <tr>
-                            <td class="text-center"><?= date("M d, Y", strtotime($row['purchase_date'])) ?></td>
-                            <td class=""><?= htmlspecialchars($product['name'], ENT_QUOTES) ?></td>
-                            <td class="text-right"><?= format_num($row['quantity']) ?></td>
-                            <td class="text-right">₱<?= format_num($row['selling_price']) ?></td>
-                            <td class="text-right">₱<?= format_num($total_price) ?></td>
-                            <td class="text-center">
-                                <?php
-                                // Mapping the numeric status values to human-readable status
-                                $status_map = [
-                                    0 => 'NO STATUS',
-                                    1 => 'APPROVED',
-                                    2 => 'DENIED'
-                                ];
-
-                                // Get the status value from the row
-                                $status = isset($row['status']) ? $row['status'] : 0; // Default to 0 if status is not set
-
-                                // Map the status to its corresponding badge and style
-                                switch ($status) {
-                                    case 1:
-                                        echo '<span class="badge badge-success bg-gradient-success">APPROVED</span>';
-                                        break;
-                                    case 2:
-                                        echo '<span class="badge badge-danger bg-gradient-danger">DENIED</span>';
-                                        break;
-                                    default:
-                                        echo '<span class="badge badge-dark">NO STATUS</span>';
-                                        break;
-                                }
-                                ?>
-                            </td>
-                            <td><?= isset($row['po_number']) && !empty($row['po_number']) ? htmlspecialchars($row['po_number']) : "N/A" ?></td>
-                            <td><?= isset($user_arr[$row['user_id']]) ? $user_arr[$row['user_id']] : "N/A" ?></td>
-                            <td class="text-center">
-                                <button type="button" class="btn btn-flat btn-default btn-sm dropdown-toggle dropdown-icon" data-toggle="dropdown">
-                                    Action
-                                    <span class="sr-only">Toggle Dropdown</span>
-                                </button>
-                                <div class="dropdown-menu" role="menu">
-                                    <a class="dropdown-item delete_data" href="javascript:void(0)" data-id="<?php echo $row['id'] ?>"
-                                        <?php if ($status == 1) {
-                                            echo 'style="pointer-events: none; color: #ccc; cursor: not-allowed;"'; // Disable delete for approved status with not-allowed cursor
-                                        } ?>>
-                                        <span class="fa fa-trash text-danger"></span> Delete
-                                    </a>
-
-                                    <!-- Show Approve and Deny options only for managers -->
-                                    <?php if ($_settings->userdata('type') == 3): // Only show these options for managers 
+                            <tr>
+                                <td class="text-center"><?= htmlspecialchars(date("M d, Y", strtotime($row['purchase_date'])), ENT_QUOTES) ?></td>
+                                <td class=""><?= htmlspecialchars($product['name'], ENT_QUOTES) ?></td>
+                                <td class="text-right"><?= htmlspecialchars(format_num($row['quantity']), ENT_QUOTES) ?></td>
+                                <td class="text-right">₱<?= htmlspecialchars(format_num($row['selling_price']), ENT_QUOTES) ?></td>
+                                <td class="text-right">₱<?= htmlspecialchars(format_num($total_price), ENT_QUOTES) ?></td>
+                                <td class="text-center">
+                                    <?php
+                                    $status_map = array(
+                                        0 => '<span class="badge badge-dark">NO STATUS</span>',
+                                        1 => '<span class="badge badge-success bg-gradient-success">APPROVED</span>',
+                                        2 => '<span class="badge badge-danger bg-gradient-danger">DENIED</span>',
+                                    );
+                                    echo isset($status_map[$row['status']]) ? $status_map[$row['status']] : $status_map[0];
                                     ?>
-                                        <div class="dropdown-divider"></div>
-                                        <a class="dropdown-item approve_data" href="javascript:void(0)" data-sales_code="<?php echo $row['sales_code']; ?>" data-status="1">
-                                            <span class="fa fa-check text-success"></span> Approve
+                                </td>
+                                <td><?= isset($row['po_number']) && !empty($row['po_number']) ? htmlspecialchars($row['po_number'], ENT_QUOTES) : "N/A" ?></td>
+                                <td><?= isset($user_arr[$row['user_id']]) ? htmlspecialchars($user_arr[$row['user_id']], ENT_QUOTES) : "N/A" ?></td>
+                                <td class="text-center">
+                                    <button type="button" class="btn btn-flat btn-default btn-sm dropdown-toggle dropdown-icon" data-toggle="dropdown">
+                                        Action
+                                        <span class="sr-only">Toggle Dropdown</span>
+                                    </button>
+                                    <div class="dropdown-menu" role="menu">
+                                        <a class="dropdown-item delete_data" href="javascript:void(0)" data-id="<?= htmlspecialchars($row['id'], ENT_QUOTES) ?>"
+                                            <?php if ($row['status'] == 1) {
+                                                echo 'style="pointer-events: none; color: #ccc; cursor: not-allowed;"';
+                                            } ?>>
+                                            <span class="fa fa-trash text-danger"></span> Delete
                                         </a>
-                                        <a class="dropdown-item deny_data" href="javascript:void(0)" data-sales_code="<?php echo $row['sales_code']; ?>" data-status="2">
-                                            <span class="fa fa-times text-danger"></span> Deny
-                                        </a>
-                                    <?php endif; ?>
-                                </div>
-                            </td>
-                        </tr>
-                    <?php endwhile; ?>
+                                        <?php if ($_settings->userdata('type') == 3): ?>
+                                            <div class="dropdown-divider"></div>
+                                            <a class="dropdown-item approve_data" href="javascript:void(0)" data-sales_code="<?= htmlspecialchars($row['sales_code'], ENT_QUOTES) ?>" data-status="1">
+                                                <span class="fa fa-check text-success"></span> Approve
+                                            </a>
+                                            <a class="dropdown-item deny_data" href="javascript:void(0)" data-sales_code="<?= htmlspecialchars($row['sales_code'], ENT_QUOTES) ?>" data-status="2">
+                                                <span class="fa fa-times text-danger"></span> Deny
+                                            </a>
+                                        <?php endif; ?>
+                                    </div>
+                                </td>
+                            </tr>
+                    <?php
+                        endwhile;
+                    }
+                    ?>
                 </tbody>
             </table>
         </div>
@@ -321,76 +334,76 @@ FROM `sales` s {$swhere} ORDER BY date(s.purchase_date) ASC");
 </script>
 
 <script>
-function submitPrintForm() {
-    const table = document.querySelector('#salesTable'); // Ensure this is the correct table ID or class
+    function submitPrintForm() {
+        const table = document.querySelector('#salesTable'); // Ensure this is the correct table ID or class
 
-    if (!table) {
-        console.error('Table not found!');
-        return; // Exit the function if table is not found
+        if (!table) {
+            console.error('Table not found!');
+            return; // Exit the function if table is not found
+        }
+
+        const poNumber = document.getElementById('po_number_filter').value.trim().toUpperCase(); // Get PO number from input field
+
+        // Set the PO number in the PO Details section
+        const poNumberDisplay = document.getElementById('poNumberDisplay');
+        if (poNumberDisplay) {
+            poNumberDisplay.textContent = `PO #: ${poNumber || '____________________'}`;
+        }
+
+        // Create a new form element
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = 'http://localhost/ajms/admin/sales/print_order.php'; // Update to the correct action URL
+
+        // Add target="_blank" to open the form in a new tab
+        form.target = '_blank';
+
+        // Add PO number to the form
+        const poNumberInput = document.createElement('input');
+        poNumberInput.type = 'hidden';
+        poNumberInput.name = 'po_number';
+        poNumberInput.value = poNumber;
+        form.appendChild(poNumberInput);
+
+        // Select only visible rows in the table
+        const rows = table.querySelectorAll('tbody tr:not([style="display: none;"])');
+        rows.forEach((row, rowIndex) => {
+            const cells = row.querySelectorAll('td');
+            const productName = cells[1].textContent.trim(); // Product name (second column)
+            const quantity = cells[2].textContent.trim(); // Quantity (third column)
+            const price = cells[3].textContent.trim(); // Price (fourth column)
+            const total = cells[4].textContent.trim(); // Total (fifth column)
+
+            // Create hidden input fields for the required data (product, quantity, price, total)
+            const inputProductName = document.createElement('input');
+            inputProductName.type = 'hidden';
+            inputProductName.name = `entries[${rowIndex}][product]`;
+            inputProductName.value = productName;
+            form.appendChild(inputProductName);
+
+            const inputQuantity = document.createElement('input');
+            inputQuantity.type = 'hidden';
+            inputQuantity.name = `entries[${rowIndex}][quantity]`;
+            inputQuantity.value = quantity;
+            form.appendChild(inputQuantity);
+
+            const inputPrice = document.createElement('input');
+            inputPrice.type = 'hidden';
+            inputPrice.name = `entries[${rowIndex}][price]`;
+            inputPrice.value = price;
+            form.appendChild(inputPrice);
+
+            const inputTotal = document.createElement('input');
+            inputTotal.type = 'hidden';
+            inputTotal.name = `entries[${rowIndex}][total]`;
+            inputTotal.value = total;
+            form.appendChild(inputTotal);
+        });
+
+        // Append the form to the body and submit it
+        document.body.appendChild(form);
+        form.submit();
     }
-
-    const poNumber = document.getElementById('po_number_filter').value.trim().toUpperCase(); // Get PO number from input field
-
-    // Set the PO number in the PO Details section
-    const poNumberDisplay = document.getElementById('poNumberDisplay');
-    if (poNumberDisplay) {
-        poNumberDisplay.textContent = `PO #: ${poNumber || '____________________'}`;
-    }
-
-    // Create a new form element
-    const form = document.createElement('form');
-    form.method = 'POST';
-    form.action = 'http://localhost/ajms/admin/sales/print_order.php'; // Update to the correct action URL
-
-    // Add target="_blank" to open the form in a new tab
-    form.target = '_blank';
-
-    // Add PO number to the form
-    const poNumberInput = document.createElement('input');
-    poNumberInput.type = 'hidden';
-    poNumberInput.name = 'po_number';
-    poNumberInput.value = poNumber;
-    form.appendChild(poNumberInput);
-
-    // Select only visible rows in the table
-    const rows = table.querySelectorAll('tbody tr:not([style="display: none;"])');
-    rows.forEach((row, rowIndex) => {
-        const cells = row.querySelectorAll('td');
-        const productName = cells[1].textContent.trim(); // Product name (second column)
-        const quantity = cells[2].textContent.trim(); // Quantity (third column)
-        const price = cells[3].textContent.trim(); // Price (fourth column)
-        const total = cells[4].textContent.trim(); // Total (fifth column)
-
-        // Create hidden input fields for the required data (product, quantity, price, total)
-        const inputProductName = document.createElement('input');
-        inputProductName.type = 'hidden';
-        inputProductName.name = `entries[${rowIndex}][product]`;
-        inputProductName.value = productName;
-        form.appendChild(inputProductName);
-
-        const inputQuantity = document.createElement('input');
-        inputQuantity.type = 'hidden';
-        inputQuantity.name = `entries[${rowIndex}][quantity]`;
-        inputQuantity.value = quantity;
-        form.appendChild(inputQuantity);
-
-        const inputPrice = document.createElement('input');
-        inputPrice.type = 'hidden';
-        inputPrice.name = `entries[${rowIndex}][price]`;
-        inputPrice.value = price;
-        form.appendChild(inputPrice);
-
-        const inputTotal = document.createElement('input');
-        inputTotal.type = 'hidden';
-        inputTotal.name = `entries[${rowIndex}][total]`;
-        inputTotal.value = total;
-        form.appendChild(inputTotal);
-    });
-
-    // Append the form to the body and submit it
-    document.body.appendChild(form);
-    form.submit();
-}
 
 
 

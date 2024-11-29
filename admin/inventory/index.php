@@ -1,6 +1,7 @@
 <?php
 function format_num($number)
 {
+    // Determine the number of decimals
     $decimals = 0;
     $num_ex = explode('.', $number);
     $decimals = isset($num_ex[1]) ? strlen($num_ex[1]) : 0;
@@ -13,13 +14,19 @@ $swhere = "";
 // Check if the user is not an Admin (type 1) or Manager (type 3)
 if ($_settings->userdata('type') != 1 && $_settings->userdata('type') != 3) {
     // Filter based on the logged-in user's ID
-    $swhere = " WHERE user_id = '{$_settings->userdata('id')}' ";
+    $swhere = " WHERE user_id = '" . $_settings->userdata('id') . "' ";
 }
 
 // Fetch user details for mapping
-$users = $conn->query("SELECT id, username FROM `users` WHERE id IN (SELECT `user_id` FROM `sales` {$swhere})");
-$user_arr = array_column($users->fetch_all(MYSQLI_ASSOC), 'username', 'id');
+$users = $conn->query("SELECT id, username FROM `users` WHERE id IN (SELECT `user_id` FROM `sales` " . $swhere . ")");
+$user_arr = array();
+if ($users) {
+    while ($user_row = $users->fetch_assoc()) {
+        $user_arr[$user_row['id']] = $user_row['username'];
+    }
+}
 
+// Fetch inventory data
 $inventory = $conn->query("SELECT 
     s.id, 
     s.entry_code, 
@@ -36,17 +43,20 @@ $inventory = $conn->query("SELECT
     s.date_updated 
 FROM `inventory_entries` s 
 JOIN `products` p ON s.product_id = p.id 
-{$swhere} 
+" . $swhere . " 
 ORDER BY date(s.entry_date) ASC");
 
-$entries = [];
-while ($row = $inventory->fetch_assoc()) {
-    $total_price = $row['quantity'] * $row['purchase_price']; // Calculate total price in PHP
-    $row['total_price'] = $total_price; // Add total price to the row data
-    $entries[] = $row;
+$entries = array();
+if ($inventory) {
+    while ($row = $inventory->fetch_assoc()) {
+        // Calculate total price in PHP
+        $total_price = $row['quantity'] * $row['purchase_price'];
+        $row['total_price'] = $total_price; // Add total price to the row data
+        $entries[] = $row;
+    }
 }
-
 ?>
+
 
 <script>
     // Pass the PHP arrays to JavaScript
@@ -90,14 +100,9 @@ while ($row = $inventory->fetch_assoc()) {
     }
 </style>
 <div class="card card-outline card-primary">
-
     <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
-        <!-- Left Section (Title) -->
         <h3 class="card-title">Purchase Entries For Purchases</h3>
-
-        <!-- Centered Section (Filter and Print Buttons) -->
         <div style="display: flex; align-items: center; gap: 15px; justify-content: center;">
-            <!-- Filter by PO Number -->
             <form id="filterForm" class="form-inline" style="display: inline-block;">
                 <div class="input-group">
                     <input type="text" class="form-control form-control-sm" id="po_number_filter" placeholder="Filter by PO Number">
@@ -110,8 +115,6 @@ while ($row = $inventory->fetch_assoc()) {
                 <i class="fa fa-print"></i> Print
             </button>
         </div>
-
-        <!-- Right Section (Add New Button) -->
         <div class="card-tools" style="position: absolute; right: 0; padding-right: 20px;">
             <button class="btn btn-primary btn-flat btn-sm" id="create_new" type="button">
                 <i class="fa fa-pen-square"></i> Add New Purchase Entry
@@ -122,14 +125,14 @@ while ($row = $inventory->fetch_assoc()) {
         <div class="container-fluid">
             <table class="table table-hover table-striped table-bordered" id="inventoryTable">
                 <colgroup>
-                    <col width="10%"> <!-- Date column -->
-                    <col width="5%"> <!-- Entry Code column -->
-                    <col width="5%"> <!-- Product column -->
-                    <col width="9%"> <!-- Description column -->
-                    <col width="6%"> <!-- Quantity column -->
-                    <col width="6%"> <!-- Total Price column -->
-                    <col width="4%"> <!-- Remarks column -->
-                    <col width="4%"> <!-- Status column -->
+                    <col width="10%">
+                    <col width="5%">
+                    <col width="5%">
+                    <col width="9%">
+                    <col width="6%">
+                    <col width="6%">
+                    <col width="4%">
+                    <col width="4%">
                 </colgroup>
                 <thead>
                     <tr>
@@ -144,7 +147,7 @@ while ($row = $inventory->fetch_assoc()) {
                             </div>
                         </th>
                         <th>PO Number</th>
-                        <th>Status</th> <!-- Added Status column -->
+                        <th>Status</th>
                         <th>Recorded By</th>
                         <th>Action</th>
                     </tr>
@@ -158,83 +161,67 @@ while ($row = $inventory->fetch_assoc()) {
                     if ($user_type == 1 || $user_type == 3) {
                         $swhere = "";
                     } else {
-                        $swhere = " WHERE user_id = '{$user_id}' ";
+                        $swhere = " WHERE user_id = '" . $user_id . "'";
                     }
 
-                    $users = $conn->query("SELECT id, username FROM `users` WHERE id IN (SELECT `user_id` FROM `inventory_entries` {$swhere})");
-                    $user_arr = array_column($users->fetch_all(MYSQLI_ASSOC), 'username', 'id');
+                    $users = $conn->query("SELECT id, username FROM `users` WHERE id IN (SELECT `user_id` FROM `inventory_entries` " . $swhere . ")");
+                    $user_arr = array();
+                    while ($user_row = $users->fetch_assoc()) {
+                        $user_arr[$user_row['id']] = $user_row['username'];
+                    }
 
-                    $inventory = $conn->query("SELECT id, entry_date, entry_code, description, quantity, remarks, user_id, product_id, status FROM `inventory_entries` {$swhere} ORDER BY date(entry_date) ASC");
+                    $inventory = $conn->query("SELECT id, entry_date, entry_code, description, quantity, remarks, user_id, product_id, status FROM `inventory_entries` " . $swhere . " ORDER BY date(entry_date) ASC");
 
-                    while ($row = $inventory->fetch_assoc()):
-                        $product = $conn->query("SELECT name, purchase_price FROM products WHERE id = '{$row['product_id']}'")->fetch_assoc();
-                        $total_price = $row['quantity'] * $product['purchase_price'];
+                    while ($row = $inventory->fetch_assoc()) {
+                        $product_query = $conn->query("SELECT name, purchase_price FROM products WHERE id = '" . $row['product_id'] . "'");
+                        $product = $product_query->fetch_assoc();
+                        $product_name = isset($product['name']) ? $product['name'] : 'Unknown';
+                        $purchase_price = isset($product['purchase_price']) ? $product['purchase_price'] : 0;
+                        $total_price = $row['quantity'] * $purchase_price;
                     ?>
                         <tr>
-                            <td class="text-center"><?= date("M d, Y", strtotime($row['entry_date'])) ?></td>
-                            <td class=""><?= htmlspecialchars($row['entry_code'], ENT_QUOTES) ?></td>
-                            <td class=""><?= htmlspecialchars($product['name'], ENT_QUOTES) ?></td>
+                            <td class="text-center"><?php echo date("M d, Y", strtotime($row['entry_date'])); ?></td>
+                            <td><?php echo htmlspecialchars($row['entry_code'], ENT_QUOTES); ?></td>
+                            <td><?php echo htmlspecialchars($product_name, ENT_QUOTES); ?></td>
                             <td class="p-0">
                                 <div class="d-flex w-100">
-                                    <div class="col-5 border"><?= htmlspecialchars($row['description'], ENT_QUOTES) ?></div>
-                                    <div class="col-3 border text-right"><?= format_num($row['quantity']) ?></div>
-                                    <div class="col-4 border text-right">₱<?= format_num($total_price) ?></div>
+                                    <div class="col-5 border"><?php echo htmlspecialchars($row['description'], ENT_QUOTES); ?></div>
+                                    <div class="col-3 border text-right"><?php echo number_format($row['quantity']); ?></div>
+                                    <div class="col-4 border text-right">₱<?php echo number_format($total_price, 2); ?></div>
                                 </div>
                             </td>
-                            <td><?= htmlspecialchars($row['remarks'], ENT_QUOTES) ?></td>
+                            <td><?php echo htmlspecialchars($row['remarks'], ENT_QUOTES); ?></td>
                             <td class="text-center">
                                 <?php
-                                // Mapping the numeric status values to human-readable status
-                                $status_map = [
-                                    0 => 'NO STATUS',
-                                    1 => 'APPROVED',
-                                    2 => 'DENIED'
-                                ];
-
-                                // Get the status value from the row
-                                $status = isset($row['status']) ? $row['status'] : 0; // Default to 0 if status is not set
-
-                                // Map the status to its corresponding badge and style
-                                switch ($status) {
-                                    case 1:
-                                        echo '<span class="badge badge-success bg-gradient-success">APPROVED</span>';
-                                        break;
-                                    case 2:
-                                        echo '<span class="badge badge-danger bg-gradient-danger">DENIED</span>';
-                                        break;
-                                    default:
-                                        echo '<span class="badge badge-dark">NO STATUS</span>';
-                                        break;
-                                }
+                                $status_map = array(
+                                    0 => '<span class="badge badge-dark">NO STATUS</span>',
+                                    1 => '<span class="badge badge-success bg-gradient-success">APPROVED</span>',
+                                    2 => '<span class="badge badge-danger bg-gradient-danger">DENIED</span>',
+                                );
+                                echo isset($status_map[$row['status']]) ? $status_map[$row['status']] : $status_map[0];
                                 ?>
                             </td>
-                            <td><?= isset($user_arr[$row['user_id']]) ? $user_arr[$row['user_id']] : "N/A" ?></td>
+                            <td><?php echo isset($user_arr[$row['user_id']]) ? htmlspecialchars($user_arr[$row['user_id']], ENT_QUOTES) : 'N/A'; ?></td>
                             <td class="text-center">
                                 <button type="button" class="btn btn-flat btn-default btn-sm dropdown-toggle dropdown-icon" data-toggle="dropdown">
                                     Action
                                     <span class="sr-only">Toggle Dropdown</span>
                                 </button>
                                 <div class="dropdown-menu" role="menu">
-                                    <a class="dropdown-item view_data" href="javascript:void(0)" data-id="<?php echo $row['id'] ?>">
+                                    <a class="dropdown-item view_data" href="javascript:void(0)" data-id="<?php echo $row['id']; ?>">
                                         <span class="fa fa-eye text-dark"></span> View
                                     </a>
-
-                                    <!-- Show Edit and Delete buttons if user is not a manager -->
                                     <?php if ($user_type != 3) { ?>
-                                        <div class="dropdown-divider"></div> <!-- Divider for non-managers -->
-                                        <a class="dropdown-item edit_data" href="javascript:void(0)" data-code="<?php echo $row['entry_code'] ?>" data-status="<?php echo $status; ?>">
+                                        <div class="dropdown-divider"></div>
+                                        <a class="dropdown-item edit_data" href="javascript:void(0)" data-code="<?php echo $row['entry_code']; ?>">
                                             <span class="fa fa-edit text-primary"></span> Edit
                                         </a>
-                                        <div class="dropdown-divider"></div> <!-- Divider shown only if Edit button is visible -->
-
-                                        <a class="dropdown-item delete_data" href="javascript:void(0)" data-code="<?php echo $row['entry_code'] ?>" data-status="<?php echo $status; ?>">
+                                        <div class="dropdown-divider"></div>
+                                        <a class="dropdown-item delete_data" href="javascript:void(0)" data-code="<?php echo $row['entry_code']; ?>">
                                             <span class="fa fa-trash text-danger"></span> Delete
                                         </a>
                                     <?php } ?>
-
-                                    <!-- Show Approve and Deny options only for managers -->
-                                    <?php if ($user_type == 3): // Only show these options for managers 
-                                    ?>
+                                    <?php if ($user_type == 3) { ?>
                                         <div class="dropdown-divider"></div>
                                         <a class="dropdown-item approve_data" href="javascript:void(0)" data-entry_code="<?php echo $row['entry_code']; ?>" data-status="1">
                                             <span class="fa fa-check text-success"></span> Approve
@@ -242,17 +229,16 @@ while ($row = $inventory->fetch_assoc()) {
                                         <a class="dropdown-item deny_data" href="javascript:void(0)" data-entry_code="<?php echo $row['entry_code']; ?>" data-status="2">
                                             <span class="fa fa-times text-danger"></span> Deny
                                         </a>
-                                    <?php endif; ?>
+                                    <?php } ?>
                                 </div>
                             </td>
                         </tr>
-                    <?php endwhile; ?>
+                    <?php } ?>
                 </tbody>
             </table>
         </div>
     </div>
 </div>
-
 
 <script>
     $(document).ready(function() {

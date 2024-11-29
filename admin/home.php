@@ -10,22 +10,34 @@ function format_num($number)
 $from = isset($_POST['start_date']) ? $_POST['start_date'] : date("Y-m-d", strtotime(date('Y-m-d') . " -1 month"));
 $to = isset($_POST['end_date']) ? $_POST['end_date'] : date("Y-m-d");
 
-// Fetch total sales within date range using prepared statements
+// Fetch total sales within date range
 $sales_stmt = $conn->prepare("SELECT SUM(total_price) AS total_sales FROM sales WHERE purchase_date BETWEEN ? AND ?");
-$sales_stmt->bind_param("ss", $from, $to);
-$sales_stmt->execute();
-$sales_result = $sales_stmt->get_result();
-$total_sales = $sales_result->fetch_assoc()['total_sales'] ?? 0;
+if ($sales_stmt) {
+    $sales_stmt->bind_param("ss", $from, $to);
+    $sales_stmt->execute();
+    $sales_result = $sales_stmt->get_result();
+    $sales_row = $sales_result->fetch_assoc();
+    $total_sales = isset($sales_row['total_sales']) ? $sales_row['total_sales'] : 0;
+    $sales_stmt->close();
+} else {
+    $total_sales = 0; // Default value in case of query failure
+}
 
-// Fetch total purchases within date range using prepared statements
+// Fetch total purchases within date range
 $purchase_stmt = $conn->prepare("SELECT SUM(purchase_price * quantity) AS total_purchase FROM inventory_entries JOIN products ON inventory_entries.product_id = products.id WHERE entry_date BETWEEN ? AND ?");
-$purchase_stmt->bind_param("ss", $from, $to);
-$purchase_stmt->execute();
-$purchase_result = $purchase_stmt->get_result();
-$total_purchase = $purchase_result->fetch_assoc()['total_purchase'] ?? 0;
+if ($purchase_stmt) {
+    $purchase_stmt->bind_param("ss", $from, $to);
+    $purchase_stmt->execute();
+    $purchase_result = $purchase_stmt->get_result();
+    $purchase_row = $purchase_result->fetch_assoc();
+    $total_purchase = isset($purchase_row['total_purchase']) ? $purchase_row['total_purchase'] : 0;
+    $purchase_stmt->close();
+} else {
+    $total_purchase = 0; // Default value in case of query failure
+}
 
 // Calculate profit based on the date range
-$profit = ($total_sales ?? 0) - ($total_purchase ?? 0);
+$profit = $total_sales - $total_purchase;
 ?>
 
 
@@ -108,7 +120,7 @@ $profit = ($total_sales ?? 0) - ($total_purchase ?? 0);
             </div>
         </div>
     </div>
-<!--
+    <!--
     <div class="col-12 col-sm-12 col-md-6 col-lg-4">
         <div class="info-box bg-gradient-light shadow">
             <span class="info-box-icon bg-gradient-info elevation-1"><i class="fas fa-shopping-cart"></i></span>
@@ -123,7 +135,7 @@ $profit = ($total_sales ?? 0) - ($total_purchase ?? 0);
     -->
 
 </div>
-    
+
 
 <!-- New row for Total Purchases and Profit -->
 <div class="row mt-3">
@@ -155,7 +167,7 @@ $profit = ($total_sales ?? 0) - ($total_purchase ?? 0);
 
                     if ($result) {
                         $row = $result->fetch_assoc();
-                        $total_stocks = $row['total_stocks'] ?? 0; // Use 0 if NULL
+                        $total_stocks = isset($row['total_stocks']) ? $row['total_stocks'] : 0; // Use 0 if NULL
                     }
 
                     echo $total_stocks > 0 ? $total_stocks : "No stocks available";
