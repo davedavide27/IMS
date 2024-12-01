@@ -43,6 +43,7 @@ class Master extends DBConnection
 		$entry_code = isset($_POST['entry_code']) ? $this->conn->real_escape_string($_POST['entry_code']) : null;
 		$entry_date = isset($_POST['entry_date']) ? $this->conn->real_escape_string($_POST['entry_date']) : null;
 		$description = isset($_POST['description']) ? $this->conn->real_escape_string($_POST['description']) : null;
+		$gl_code = isset($_POST['gl_code']) ? $this->conn->real_escape_string($_POST['gl_code']) : null;
 		$remarks = isset($_POST['remarks']) ? $this->conn->real_escape_string($_POST['remarks']) : null;
 
 		if (empty($product_id) || is_null($quantity) || empty($entry_date) || empty($entry_code)) {
@@ -78,7 +79,8 @@ class Master extends DBConnection
 			'quantity' => $quantity,
 			'user_id' => $user_id,
 			'product_id' => $product_id,
-			'remarks' => $remarks
+			'remarks' => $remarks,
+			'gl_code' => $gl_code
 		];
 
 		$fields = implode(", ", array_keys($data));
@@ -265,6 +267,7 @@ class Master extends DBConnection
 		$description = isset($_POST['description']) ? $this->conn->real_escape_string($_POST['description']) : null;
 		$product_id = isset($_POST['product_id']) ? $this->conn->real_escape_string($_POST['product_id']) : null;
 		$quantity = isset($_POST['quantity']) ? (float)$this->conn->real_escape_string($_POST['quantity']) : null;
+		$gl_code = isset($_POST['gl_code']) ? $this->conn->real_escape_string($_POST['gl_code']) : null;
 		$remarks = isset($_POST['remarks']) ? $this->conn->real_escape_string($_POST['remarks']) : null;
 
 		// Ensure all required fields are provided
@@ -314,6 +317,7 @@ class Master extends DBConnection
 			`remarks` = ?,
 			`product_id` = ?, 
 			`quantity` = ?, 
+			`gl_code` = ?,
 			`date_updated` = CURRENT_TIMESTAMP 
 			WHERE `entry_code` = ?");
 
@@ -323,7 +327,7 @@ class Master extends DBConnection
 		}
 
 		// Bind parameters to the prepared statement
-		$update_entry_stmt->bind_param("sssisi", $entry_date, $description, $remarks, $product_id, $quantity, $entry_code);
+		$update_entry_stmt->bind_param("sssissi", $entry_date, $description, $remarks, $product_id, $quantity, $gl_code, $entry_code);
 
 		// Execute the update for `inventory_entries`
 		$update_entry_success = $update_entry_stmt->execute();
@@ -508,11 +512,12 @@ class Master extends DBConnection
 		$purchase_date = isset($_POST['purchase_date']) ? $this->conn->real_escape_string($_POST['purchase_date']) : null;
 		$product_id = isset($_POST['product_id']) ? $this->conn->real_escape_string($_POST['product_id']) : null;
 		$quantity = isset($_POST['quantity']) ? (float)$this->conn->real_escape_string($_POST['quantity']) : null;
+		$gl_code = isset($_POST['gl_code']) ? $this->conn->real_escape_string($_POST['gl_code']) : null;
 		$selling_price = isset($_POST['selling_price']) ? (float)$this->conn->real_escape_string($_POST['selling_price']) : null;
 		$total_price = isset($_POST['total_price']) ? (float)$this->conn->real_escape_string($_POST['total_price']) : null;
 
 		// Ensure all required fields are provided
-		if (empty($sales_code) || empty($po_number) || empty($purchase_date) || empty($product_id) || is_null($quantity) || is_null($selling_price) || is_null($total_price)) {
+		if (empty($sales_code) || empty($gl_code)  || empty($po_number) || empty($purchase_date) || empty($product_id) || is_null($quantity) || is_null($selling_price) || is_null($total_price)) {
 			$resp['msg'] = "All fields are required.";
 			echo json_encode($resp);
 			exit;
@@ -553,6 +558,7 @@ class Master extends DBConnection
 			'user_id' => $user_id,
 			'product_id' => $product_id,
 			'quantity' => $quantity,
+			'gl_code' => $gl_code,
 			'selling_price' => $selling_price,
 			'total_price' => $total_price
 		];
@@ -829,10 +835,17 @@ class Master extends DBConnection
 			$resp['msg'] = "Error executing query: " . $this->conn->error;
 			return json_encode($resp);
 		}
+		// Process query results
+		$status_map = [
+			0 => 'NO STATUS',
+			1 => 'APPROVED',
+			2 => 'DENIED'
+		]; // Status mapping for better readability
 
 		// Fetch the filtered records
 		$entries = [];
 		while ($row = $result->fetch_assoc()) {
+			$row['status_label'] = $status_map[$row['status']] ?? 'UNKNOWN STATUS';
 			$entries[] = $row; // Add each entry to the array
 		}
 
@@ -909,7 +922,6 @@ class Master extends DBConnection
 		return json_encode($resp);
 	}
 
-	// Function to filter inventory entries by PO number (stored in remarks field)
 	public function filter_inventory_by_po_number()
 	{
 		$resp = ['status' => 'failed', 'msg' => 'An unexpected error occurred.'];
@@ -924,45 +936,70 @@ class Master extends DBConnection
 		// Escape PO number to prevent SQL injection
 		$po_number = $this->conn->real_escape_string($po_number);
 
-		// Assuming you are fetching the filtered entries on the backend
-
-		$sql = "SELECT i.id, i.entry_code, i.entry_date, i.description, i.quantity, i.status, 
-            i.remarks, i.product_id, p.name AS product_name, p.purchase_price AS product_price, 
-            u.username 
-        FROM `inventory_entries` i
-        LEFT JOIN `products` p ON i.product_id = p.id
-        LEFT JOIN `users` u ON i.user_id = u.id
-        WHERE i.remarks LIKE '%$po_number%'";
+		// Query to fetch filtered inventory entries
+		$sql = "
+		SELECT 
+			i.id, 
+			i.entry_code, 
+			i.entry_date, 
+			i.description, 
+			i.quantity, 
+			COALESCE(i.status, 0) AS status, 
+			i.remarks, 
+			i.product_id, 
+			p.name AS product_name, 
+			p.purchase_price AS product_price, 
+			u.username AS user_inventory_username,
+			u.type AS user_inventory_type
+		FROM 
+			`inventory_entries` i
+		LEFT JOIN 
+			`products` p ON i.product_id = p.id
+		LEFT JOIN 
+			`users_inventory` u ON i.user_id = u.id
+		WHERE 
+			i.remarks LIKE '%$po_number%'
+		";
 
 		// Execute the query and fetch the results
 		$result = $this->conn->query($sql);
 
-
 		if (!$result) {
-			// Query failed
+			// Query execution failed
 			$resp['msg'] = "Error executing query: " . $this->conn->error;
 			return json_encode($resp);
 		}
 
-		// Fetch the filtered records
+		// Process query results
 		$entries = [];
+		$status_map = [
+			0 => 'NO STATUS',
+			1 => 'APPROVED',
+			2 => 'DENIED'
+		]; // Status mapping for better readability
+
 		while ($row = $result->fetch_assoc()) {
-			$entries[] = $row; // Add each entry to the array
+			// Map status to a readable format
+			$row['status_label'] = $status_map[$row['status']] ?? 'UNKNOWN STATUS';
+			// No need to manually add user_type since it's already fetched as user_inventory_type
+			$entries[] = $row; // Add entry to results array
 		}
 
 		// Check if any entries were found
 		if (count($entries) > 0) {
 			$resp['status'] = 'success';
 			$resp['filteredEntries'] = $entries;
-			$resp['msg'] = "Entries successfully retrieved."; // Provide a success message
+			$resp['msg'] = "Entries successfully retrieved."; // Success message
 		} else {
-			$resp['status'] = 'success'; // Even though no records were found, mark as success
+			$resp['status'] = 'success'; // Mark as success even if no entries are found
 			$resp['filteredEntries'] = [];
 			$resp['msg'] = "No inventory entries found for the PO number '{$po_number}'.";
 		}
 
+		// Return the user type along with filtered entries
 		return json_encode($resp);
 	}
+
 
 
 

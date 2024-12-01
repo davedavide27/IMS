@@ -12,7 +12,7 @@ $purchase_price = '';
 $selling_price = '';
 
 // Connect to the GL Code database
-$gl_conn = new mysqli("localhost", "root", "", "u399391754_dbcleaners");
+$gl_conn = new mysqli("localhost", "root", password: "", database: "u399391754_dbcleaners");
 
 // Check connection
 if ($gl_conn->connect_error) {

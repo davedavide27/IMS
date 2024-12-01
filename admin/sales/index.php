@@ -24,7 +24,7 @@ if ($_settings->userdata('type') != 1 && $_settings->userdata('type') != 3) {
 
 // Fetch user details for mapping
 $user_arr = array(); // Initialize an empty array to store user data
-$user_query = $conn->query("SELECT id, username FROM `users` WHERE id IN (SELECT `user_id` FROM `sales` {$swhere})");
+$user_query = $conn->query("SELECT id, username FROM `users_inventory` WHERE id IN (SELECT `user_id` FROM `sales` {$swhere})");
 if ($user_query) {
     while ($row = $user_query->fetch_assoc()) {
         $user_arr[$row['id']] = $row['username']; // Map user ID to username
@@ -127,7 +127,7 @@ if (!$sales) {
 
                     // Fetch user details
                     $user_arr = array();
-                    $users_query = $conn->query("SELECT id, username FROM `users` WHERE id IN (SELECT `user_id` FROM `sales` {$swhere})");
+                    $users_query = $conn->query("SELECT id, username FROM `users_inventory` WHERE id IN (SELECT `user_id` FROM `sales` {$swhere})");
                     if ($users_query) {
                         while ($row = $users_query->fetch_assoc()) {
                             $user_arr[$row['id']] = $row['username'];
@@ -203,13 +203,13 @@ if (!$sales) {
         $('#create_new').click(function() {
             uni_modal("Add New Sales Entry", "sales/manage_sales.php", 'mid-large');
         });
-
+        /*
         // Edit existing sales entry
         $(document).on('click', '.edit_data', function() {
             var id = $(this).data('id');
             uni_modal("Edit", "sales/edit_sales.php?id=" + id, 'mid-large');
         });
-
+        */
         // Confirm and delete the sales entry
         $(document).on('click', '.delete_data', function() {
             var id = $(this).data('id');
@@ -353,7 +353,7 @@ if (!$sales) {
         // Create a new form element
         const form = document.createElement('form');
         form.method = 'POST';
-        form.action = 'http://localhost/ajms/admin/sales/print_order.php'; // Update to the correct action URL
+        form.action = window.location.origin + "/ajms/admin/sales/print_order.php?page=sales"; // Correct full path
 
         // Add target="_blank" to open the form in a new tab
         form.target = '_blank';
@@ -547,15 +547,24 @@ if (!$sales) {
         const date = new Date(dateString);
         return date.toLocaleDateString('en-US', options);
     }
+
     // Function to update the table with filtered entries
     function updateTableWithFilteredEntries(entries) {
         const tbody = document.querySelector('#salesTable tbody');
         tbody.innerHTML = ''; // Clear current rows
+        // Define the status map for badges
+        const statusMap = {
+            0: '<span class="badge badge-dark">NO STATUS</span>',
+            1: '<span class="badge badge-success bg-gradient-success">APPROVED</span>',
+            2: '<span class="badge badge-danger bg-gradient-danger">DENIED</span>',
+        };
 
         if (entries.length > 0) {
             entries.forEach(entry => {
                 // Get the username from userArr, defaulting to "N/A" if not found
                 const username = (userArr && userArr[entry.user_id]) ? userArr[entry.user_id] : "N/A";
+                // Get the badge HTML based on status
+                const statusBadge = statusMap[entry.status] || statusMap[0];
 
                 // Create a new row for each entry
                 const row = document.createElement('tr');
@@ -567,11 +576,7 @@ if (!$sales) {
                 <td class="text-right">${entry.quantity}</td>
                 <td class="text-right">₱${entry.selling_price}</td>
                 <td class="text-right">₱${entry.total_price}</td>
-                <td class="text-center">
-                    <span class="badge badge-${entry.status === 1 ? 'success' : (entry.status === 2 ? 'danger' : 'dark')}">
-                        ${entry.status === 1 ? 'APPROVED' : (entry.status === 2 ? 'DENIED' : 'NO STATUS')}
-                    </span>
-                </td>
+                <td class="text-center">${statusBadge}</td>
                 <td>${entry.po_number || "N/A"}</td>
                 <td>${username}</td> <!-- Display the username here -->
                 <td class="text-center">
@@ -580,7 +585,7 @@ if (!$sales) {
                         <span class="sr-only">Toggle Dropdown</span>
                     </button>
                     <div class="dropdown-menu" role="menu">
-                        <a class="dropdown-item delete_data" href="javascript:void(0)" data-id="${entry.id}" ${entry.status === 1 ? 'style="pointer-events: none; color: #ccc; cursor: not-allowed;"' : ''}>
+                        <a class="dropdown-item delete_data" href="javascript:void(0)" data-id="${entry.id}" ${entry.status == 1 ? 'style="pointer-events: none; color: #ccc; cursor: not-allowed;"' : ''}>
                             <span class="fa fa-trash text-danger"></span> Delete
                         </a>
                         <!-- Include Approve and Deny options for managers -->

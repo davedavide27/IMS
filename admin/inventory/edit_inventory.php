@@ -11,9 +11,29 @@ $purchase_price = '';
 $selling_price = '';
 $product_name = '';
 $remarks = '';
+$gl_code = '';
 
+// Connect to the GL Code database
+$gl_conn = new mysqli("localhost", "root", "", "u399391754_dbcleaners");
+
+// Check connection to the GL Code database
+if ($gl_conn->connect_error) {
+    die("GL Code Database Connection failed: " . $gl_conn->connect_error);
+}
+
+// Fetch GL Codes from the `chart_of_accounts` table in the GL database
+$gl_codes = [];
+$gl_query = $gl_conn->query("SELECT code_sub_accountName FROM chart_of_accounts");
+while ($row = $gl_query->fetch_assoc()) {
+    $gl_codes[] = $row['code_sub_accountName'];
+}
+
+// Close GL Code database connection
+$gl_conn->close();
+
+// Check if `entry_code` is provided for editing
 if (isset($_GET['entry_code'])) {
-    // Use entry_code to fetch the record for editing
+    // Use `entry_code` to fetch the record for editing
     $qry = $conn->query("SELECT * FROM `inventory_entries` WHERE entry_code = '{$_GET['entry_code']}'");
     if ($qry->num_rows > 0) {
         $res = $qry->fetch_array();
@@ -23,13 +43,12 @@ if (isset($_GET['entry_code'])) {
             }
         }
 
-        // Fetch the associated product name using product_id
-        $item_query = $conn->query("SELECT p.name as product_name, p.purchase_price, p.selling_price FROM `products` p 
+        // Fetch the associated product name using `product_id`
+        $item_query = $conn->query("SELECT p.name AS product_name, p.purchase_price, p.selling_price FROM `products` p 
                                      WHERE p.id = '{$product_id}' LIMIT 1");
         if ($item_query->num_rows > 0) {
             $item = $item_query->fetch_assoc();
             $product_name = $item['product_name'];
-            $quantity = $res['quantity'];
             $purchase_price = $item['purchase_price'];
             $selling_price = $item['selling_price'];
         }
@@ -51,6 +70,9 @@ while ($row = $product_query->fetch_assoc()) {
 // Encode products array to JSON for JavaScript
 $inventory_arr = json_encode($products);
 ?>
+
+
+
 
 <div class="container-fluid">
     <form action="" id="inventory-form">
@@ -98,12 +120,23 @@ $inventory_arr = json_encode($products);
                 <input type="number" step="any" id="purchase_price" name="purchase_price" class="form-control form-control-sm form-control-border" value="<?= isset($purchase_price) ? $purchase_price : '' ?>" readonly required>
             </div>
             <div class="form-group col-md-6">
+                <label for="gl_code" class="control-label">GL Code</label>
+                <select id="gl_code" name="gl_code" class="form-control form-control-sm form-control-border" required>
+                    <option value="" disabled <?= empty($gl_code) ? 'selected' : '' ?>>Select GL Code</option>
+                    <?php foreach ($gl_codes as $code): ?>
+                        <option value="<?= htmlspecialchars($code, ENT_QUOTES) ?>" <?= isset($gl_code) && $gl_code === $code ? 'selected' : '' ?>>
+                            <?= htmlspecialchars($code, ENT_QUOTES) ?>
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+            <div class="form-group col-md-6">
                 <label for="selling_price" class="control-label">Selling Price</label>
                 <input type="number" step="any" id="selling_price" name="selling_price" class="form-control form-control-sm form-control-border" value="<?= isset($selling_price) ? $selling_price : '' ?>" readonly required>
             </div>
         </div>
 
-    
+
     </form>
 </div>
 

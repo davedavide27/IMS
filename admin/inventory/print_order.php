@@ -6,8 +6,8 @@ require_once('./../../config.php');
 $db = new DBConnection;
 $conn = $db->conn; // MySQLi connection object
 
-// Fetch the company info from the system_info table
-$query = "SELECT * FROM system_info WHERE meta_field IN ('name', 'contact', 'email', 'company')"; // Modify query as needed
+// Fetch the company info from the system_info_inventory table
+$query = "SELECT * FROM system_info_inventory WHERE meta_field IN ('name', 'contact', 'email', 'company')"; // Modify query as needed
 $result = $conn->query($query);
 
 // Initialize variables

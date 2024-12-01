@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Nov 29, 2024 at 06:23 AM
+-- Generation Time: Dec 01, 2024 at 04:42 AM
 -- Server version: 10.4.27-MariaDB
 -- PHP Version: 8.2.0
 
@@ -24,28 +24,14 @@ SET time_zone = "+00:00";
 -- --------------------------------------------------------
 
 --
--- Table structure for table `categories`
---
-
-CREATE TABLE `categories` (
-  `id` int(30) NOT NULL,
-  `name` text NOT NULL,
-  `description` text DEFAULT NULL,
-  `delete_flag` tinyint(1) DEFAULT 0,
-  `date_created` datetime DEFAULT current_timestamp(),
-  `date_updated` datetime DEFAULT current_timestamp() ON UPDATE current_timestamp()
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- --------------------------------------------------------
-
---
 -- Table structure for table `inventory_entries`
 --
 
 CREATE TABLE `inventory_entries` (
   `id` int(30) NOT NULL,
   `product_id` int(30) NOT NULL,
-  `entry_code` varchar(100) DEFAULT NULL,
+  `entry_code` int(100) DEFAULT NULL,
+  `gl_code` varchar(100) DEFAULT NULL,
   `entry_date` date NOT NULL,
   `description` text DEFAULT NULL,
   `remarks` text DEFAULT NULL,
@@ -60,31 +46,17 @@ CREATE TABLE `inventory_entries` (
 -- Dumping data for table `inventory_entries`
 --
 
-INSERT INTO `inventory_entries` (`id`, `product_id`, `entry_code`, `entry_date`, `description`, `remarks`, `user_id`, `date_created`, `date_updated`, `quantity`, `status`) VALUES
-(238, 1, '1', '2024-11-26', 'Product test', 'PO1', 1, '2024-11-26 20:28:50', '2024-11-27 13:46:38', 100, 1),
-(239, 2, '2', '2024-11-26', 'test product', 'PO1', 1, '2024-11-26 20:34:22', '2024-11-27 20:31:47', 100, 1),
-(243, 1, '3', '2024-11-27', 'asd', 'asd', 11, '2024-11-27 12:36:50', '2024-11-27 13:37:03', 4444, 1),
-(244, 2, '4', '2024-11-27', 'asd', 'PO1', 1, '2024-11-27 20:32:27', '2024-11-27 21:16:53', 12, 0),
-(245, 1, '5', '2024-11-27', 'asdasd', 'PO1', 1, '2024-11-27 20:38:20', '2024-11-27 21:17:06', 11, 0),
-(246, 1, '6', '2024-11-27', 'asd', 'PO1', 1, '2024-11-27 21:05:40', '2024-11-27 21:17:10', 12, 0),
-(247, 1, '7', '2024-11-27', 'asdasd', 'PO3', 1, '2024-11-27 21:06:32', '2024-11-27 21:06:32', 12, 0),
-(248, 1, '8', '2024-11-27', 'asdas', 'PO3', 7, '2024-11-27 21:07:00', '2024-11-27 21:07:00', 12, 0),
-(249, 3, '9', '2024-11-27', 'oasdpad', 'PO4', 7, '2024-11-27 21:07:10', '2024-11-27 21:07:10', 12, 0);
-
--- --------------------------------------------------------
-
---
--- Table structure for table `inventory_items`
---
-
-CREATE TABLE `inventory_items` (
-  `inventory_id` int(30) NOT NULL,
-  `product_id` int(30) NOT NULL,
-  `category_id` int(30) DEFAULT NULL,
-  `quantity` float NOT NULL,
-  `price` float DEFAULT NULL,
-  `date_created` datetime DEFAULT current_timestamp()
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+INSERT INTO `inventory_entries` (`id`, `product_id`, `entry_code`, `gl_code`, `entry_date`, `description`, `remarks`, `user_id`, `date_created`, `date_updated`, `quantity`, `status`) VALUES
+(238, 1, 1, '100 - 1002 - Cash in Bank - Unionbank Boni', '2024-11-26', 'Product test', 'PO1', 1, '2024-11-26 20:28:50', '2024-11-30 10:53:40', 100, 1),
+(239, 2, 2, NULL, '2024-11-26', 'test product', 'PO1', 1, '2024-11-26 20:34:22', '2024-11-27 20:31:47', 100, 1),
+(243, 1, 3, NULL, '2024-11-27', 'asd', 'asd', 11, '2024-11-27 12:36:50', '2024-11-27 13:37:03', 4444, 1),
+(244, 2, 4, NULL, '2024-11-27', 'asd', 'PO1', 1, '2024-11-27 20:32:27', '2024-11-27 21:16:53', 12, 0),
+(245, 1, 5, NULL, '2024-11-27', 'asdasd', 'PO1', 1, '2024-11-27 20:38:20', '2024-11-27 21:17:06', 11, 0),
+(246, 1, 6, NULL, '2024-11-27', 'asd', 'PO1', 1, '2024-11-27 21:05:40', '2024-11-27 21:17:10', 12, 0),
+(247, 1, 7, NULL, '2024-11-27', 'asdasd', 'PO3', 1, '2024-11-27 21:06:32', '2024-11-27 21:06:32', 12, 0),
+(248, 1, 8, NULL, '2024-11-27', 'asdas', 'PO3', 7, '2024-11-27 21:07:00', '2024-11-27 21:07:00', 12, 0),
+(249, 3, 9, NULL, '2024-11-27', 'oasdpad', 'PO4', 7, '2024-11-27 21:07:10', '2024-11-27 21:07:10', 12, 0),
+(252, 1, 10, '100 - 1001 - Cash in Bank - PNB Rosario', '2024-11-30', 'asdas', 'asdasd', 1, '2024-11-30 10:40:53', '2024-11-30 10:53:32', 12, 0);
 
 -- --------------------------------------------------------
 
@@ -161,6 +133,7 @@ CREATE TABLE `sales` (
   `date_updated` datetime DEFAULT current_timestamp() ON UPDATE current_timestamp(),
   `sales_code` int(100) DEFAULT NULL,
   `po_number` varchar(50) DEFAULT NULL,
+  `gl_code` varchar(100) DEFAULT NULL,
   `total_price` decimal(10,2) DEFAULT NULL,
   `status` int(1) DEFAULT 0
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
@@ -169,21 +142,22 @@ CREATE TABLE `sales` (
 -- Dumping data for table `sales`
 --
 
-INSERT INTO `sales` (`id`, `purchase_date`, `product_id`, `quantity`, `selling_price`, `user_id`, `date_created`, `date_updated`, `sales_code`, `po_number`, `total_price`, `status`) VALUES
-(78, '2024-11-26', 2, 20, '80.00', 1, '2024-11-26 20:35:06', '2024-11-28 09:09:21', 1, 'PO2', '1600.00', 1),
-(80, '2024-11-27', 1, 11, '150.00', 7, '2024-11-27 13:45:30', '2024-11-27 13:45:35', 2, NULL, '1650.00', 1),
-(81, '2024-11-27', 1, 12, '150.00', 2, '2024-11-27 20:30:14', '2024-11-27 20:31:55', 3, NULL, '1800.00', 1),
-(82, '2024-11-27', 1, 1313, '150.00', 1, '2024-11-27 20:33:10', '2024-11-27 20:33:10', 4, NULL, '196950.00', 0),
-(83, '2024-11-27', 1, 13, '150.00', 1, '2024-11-27 20:33:15', '2024-11-27 20:33:15', 5, NULL, '1950.00', 0),
-(84, '2024-11-27', 1, 12, '150.00', 1, '2024-11-27 20:33:42', '2024-11-27 20:33:42', 6, NULL, '1800.00', 0),
-(85, '2024-11-27', 2, 2, '80.00', 1, '2024-11-27 20:33:47', '2024-11-27 20:33:47', 7, NULL, '160.00', 0),
-(86, '2024-11-27', 1, 22, '150.00', 1, '2024-11-27 20:33:55', '2024-11-27 20:33:55', 8, NULL, '3300.00', 0),
-(87, '2024-11-27', 2, 22, '80.00', 1, '2024-11-27 20:33:59', '2024-11-27 20:33:59', 9, NULL, '1760.00', 0),
-(88, '2024-11-27', 2, 2, '80.00', 1, '2024-11-27 20:34:06', '2024-11-27 20:35:21', 10, NULL, '160.00', 0),
-(90, '2024-11-27', 1, 12, '150.00', 1, '2024-11-27 20:37:39', '2024-11-28 10:41:45', 11, NULL, '1800.00', 1),
-(91, '2024-11-27', 1, 12, '150.00', 1, '2024-11-27 20:38:10', '2024-11-28 10:12:13', 12, NULL, '1800.00', 2),
-(92, '2024-11-27', 1, 1212, '150.00', 1, '2024-11-27 20:57:52', '2024-11-28 10:12:10', 13, NULL, '181800.00', 1),
-(94, '2024-11-28', 1, 123, '150.00', 12, '2024-11-28 09:13:58', '2024-11-28 09:13:58', 14, 'PO1', '18450.00', 0);
+INSERT INTO `sales` (`id`, `purchase_date`, `product_id`, `quantity`, `selling_price`, `user_id`, `date_created`, `date_updated`, `sales_code`, `po_number`, `gl_code`, `total_price`, `status`) VALUES
+(78, '2024-11-26', 2, 20, '80.00', 1, '2024-11-26 20:35:06', '2024-11-28 09:09:21', 1, 'PO2', NULL, '1600.00', 1),
+(80, '2024-11-27', 1, 11, '150.00', 7, '2024-11-27 13:45:30', '2024-11-27 13:45:35', 2, NULL, NULL, '1650.00', 1),
+(81, '2024-11-27', 1, 12, '150.00', 2, '2024-11-27 20:30:14', '2024-11-27 20:31:55', 3, NULL, NULL, '1800.00', 1),
+(82, '2024-11-27', 1, 1313, '150.00', 1, '2024-11-27 20:33:10', '2024-11-27 20:33:10', 4, NULL, NULL, '196950.00', 0),
+(83, '2024-11-27', 1, 13, '150.00', 1, '2024-11-27 20:33:15', '2024-11-27 20:33:15', 5, NULL, NULL, '1950.00', 0),
+(84, '2024-11-27', 1, 12, '150.00', 1, '2024-11-27 20:33:42', '2024-11-27 20:33:42', 6, NULL, NULL, '1800.00', 0),
+(85, '2024-11-27', 2, 2, '80.00', 1, '2024-11-27 20:33:47', '2024-11-27 20:33:47', 7, NULL, NULL, '160.00', 0),
+(86, '2024-11-27', 1, 22, '150.00', 1, '2024-11-27 20:33:55', '2024-11-27 20:33:55', 8, NULL, NULL, '3300.00', 0),
+(87, '2024-11-27', 2, 22, '80.00', 1, '2024-11-27 20:33:59', '2024-11-27 20:33:59', 9, NULL, NULL, '1760.00', 0),
+(88, '2024-11-27', 2, 2, '80.00', 1, '2024-11-27 20:34:06', '2024-11-27 20:35:21', 10, NULL, NULL, '160.00', 0),
+(90, '2024-11-27', 1, 12, '150.00', 1, '2024-11-27 20:37:39', '2024-11-28 10:41:45', 11, NULL, NULL, '1800.00', 1),
+(91, '2024-11-27', 1, 12, '150.00', 1, '2024-11-27 20:38:10', '2024-11-28 10:12:13', 12, NULL, NULL, '1800.00', 2),
+(92, '2024-11-27', 1, 1212, '150.00', 1, '2024-11-27 20:57:52', '2024-11-28 10:12:10', 13, NULL, NULL, '181800.00', 1),
+(94, '2024-11-28', 1, 123, '150.00', 12, '2024-11-28 09:13:58', '2024-11-28 09:13:58', 14, 'PO1', NULL, '18450.00', 0),
+(95, '2024-11-30', 1, 12, '150.00', 1, '2024-11-30 10:58:59', '2024-11-30 10:58:59', 15, 'PO1', '100 - 1001 - Cash in Bank - PNB Rosario', '1800.00', 0);
 
 -- --------------------------------------------------------
 
@@ -204,7 +178,7 @@ CREATE TABLE `stocks` (
 --
 
 INSERT INTO `stocks` (`id`, `product_id`, `available_stocks`, `date_created`, `date_updated`) VALUES
-(36, 1, 1849, '2024-11-05 17:00:14', '2024-11-28 19:30:11'),
+(36, 1, 1849, '2024-11-05 17:00:14', '2024-11-30 10:58:59'),
 (37, 2, 66, '2024-11-12 12:41:55', '2024-11-27 20:34:06'),
 (38, 4, 12, '2024-11-26 22:05:37', '2024-11-27 21:07:30'),
 (39, 3, 12, '2024-11-27 21:07:10', '2024-11-27 21:07:10');
@@ -248,6 +222,7 @@ INSERT INTO `stock_reports` (`id`, `report_datetime`, `product_id`, `stock_entri
 (92, '2024-11-27 20:57:52', 1, 0, 1936, 1212, 1, 0),
 (93, '2024-11-27 22:08:57', 1, 0, 1862, 123, 0, 0),
 (94, '2024-11-28 09:13:58', 1, 0, 1862, 123, 1, 0),
+(95, '2024-11-30 10:58:59', 1, 0, 1849, 12, 1, 0),
 (238, '2024-11-26 20:28:50', 1, 100, 100, 0, 1, 1),
 (239, '2024-11-26 20:34:22', 2, 100, 100, 0, 1, 1),
 (240, '2024-11-26 22:05:37', 4, 123, 123, 0, 0, 1),
@@ -261,7 +236,8 @@ INSERT INTO `stock_reports` (`id`, `report_datetime`, `product_id`, `stock_entri
 (248, '2024-11-27 21:07:00', 1, 12, 1972, 0, 1, 1),
 (249, '2024-11-27 21:07:10', 3, 12, 12, 0, 1, 1),
 (250, '2024-11-27 21:07:23', 1, 13, 1985, 0, 0, 1),
-(251, '2024-11-27 21:07:30', 4, 12, 12, 0, 1, 1);
+(251, '2024-11-27 21:07:30', 4, 12, 12, 0, 1, 1),
+(252, '2024-11-30 10:40:53', 1, 12, 1861, 0, 1, 1);
 
 -- --------------------------------------------------------
 
@@ -284,7 +260,7 @@ INSERT INTO `system_info` (`id`, `meta_field`, `meta_value`) VALUES
 (6, 'short_name', 'AIMS - PHP'),
 (11, 'logo', 'uploads/logo-1732715337.png'),
 (13, 'user_avatar', 'uploads/user_avatar.jpg'),
-(14, 'cover', 'uploads/cover-1732800438.png'),
+(14, 'cover', 'uploads/cover-1732933079.png'),
 (15, 'content', 'Array'),
 (16, 'email', 'anytimecleaners@gmail.com'),
 (17, 'contact', '09854698789 / 78945632'),
@@ -329,25 +305,11 @@ INSERT INTO `users` (`id`, `firstname`, `middlename`, `lastname`, `username`, `p
 --
 
 --
--- Indexes for table `categories`
---
-ALTER TABLE `categories`
-  ADD PRIMARY KEY (`id`);
-
---
 -- Indexes for table `inventory_entries`
 --
 ALTER TABLE `inventory_entries`
   ADD PRIMARY KEY (`id`),
   ADD KEY `product_id` (`product_id`);
-
---
--- Indexes for table `inventory_items`
---
-ALTER TABLE `inventory_items`
-  ADD PRIMARY KEY (`inventory_id`,`product_id`),
-  ADD KEY `product_id` (`product_id`),
-  ADD KEY `category_id` (`category_id`);
 
 --
 -- Indexes for table `products`
@@ -394,16 +356,10 @@ ALTER TABLE `users`
 --
 
 --
--- AUTO_INCREMENT for table `categories`
---
-ALTER TABLE `categories`
-  MODIFY `id` int(30) NOT NULL AUTO_INCREMENT;
-
---
 -- AUTO_INCREMENT for table `inventory_entries`
 --
 ALTER TABLE `inventory_entries`
-  MODIFY `id` int(30) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=252;
+  MODIFY `id` int(30) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=253;
 
 --
 -- AUTO_INCREMENT for table `products`
@@ -415,7 +371,7 @@ ALTER TABLE `products`
 -- AUTO_INCREMENT for table `sales`
 --
 ALTER TABLE `sales`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=95;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=96;
 
 --
 -- AUTO_INCREMENT for table `stocks`
@@ -427,7 +383,7 @@ ALTER TABLE `stocks`
 -- AUTO_INCREMENT for table `stock_reports`
 --
 ALTER TABLE `stock_reports`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=252;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=253;
 
 --
 -- AUTO_INCREMENT for table `system_info`
@@ -450,14 +406,6 @@ ALTER TABLE `users`
 --
 ALTER TABLE `inventory_entries`
   ADD CONSTRAINT `inventory_entries_ibfk_1` FOREIGN KEY (`product_id`) REFERENCES `products` (`id`) ON DELETE CASCADE;
-
---
--- Constraints for table `inventory_items`
---
-ALTER TABLE `inventory_items`
-  ADD CONSTRAINT `inventory_items_ibfk_1` FOREIGN KEY (`inventory_id`) REFERENCES `inventory_entries` (`id`),
-  ADD CONSTRAINT `inventory_items_ibfk_2` FOREIGN KEY (`product_id`) REFERENCES `products` (`id`),
-  ADD CONSTRAINT `inventory_items_ibfk_3` FOREIGN KEY (`category_id`) REFERENCES `categories` (`id`);
 
 --
 -- Constraints for table `sales`

@@ -181,6 +181,7 @@ $sales_code = $latest_code ? (intval($latest_code) + 1) : 1; // Auto-increment s
                 selling_price: $('#selling_price').val(),
                 total_price: $('#total_price').val(),
                 po_number: $('#po_number').val(), // Include PO Number
+                gl_code: $('#gl_code').val(),
                 user_id: <?= json_encode($user_id) ?> // Include user_id from PHP
             };
 

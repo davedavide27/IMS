@@ -34,7 +34,7 @@
                 <tbody>
                     <?php 
                         $i = 1;
-                        $qry = $conn->query("SELECT *, concat(firstname, ' ', lastname) as name FROM `users` WHERE id != '1' ORDER BY concat(firstname, ' ', lastname) ASC");
+                        $qry = $conn->query("SELECT *, concat(firstname, ' ', lastname) as name FROM `users_inventory` WHERE id != '1' ORDER BY concat(firstname, ' ', lastname) ASC");
                         while ($row = $qry->fetch_assoc()):
                     ?>
                     <tr>

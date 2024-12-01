@@ -3,7 +3,7 @@ require_once('../../config.php');
 if (isset($_GET['id'])) {
     $qry = $conn->query("SELECT ie.*, p.name as product_name, u.username as recorded_by, p.purchase_price FROM `inventory_entries` ie 
                          JOIN `products` p ON ie.product_id = p.id 
-                         JOIN `users` u ON ie.user_id = u.id 
+                         JOIN `users_inventory` u ON ie.user_id = u.id 
                          WHERE ie.id = '{$_GET['id']}'");
     if ($qry->num_rows > 0) {
         $res = $qry->fetch_array();
@@ -49,6 +49,12 @@ if (isset($_GET['id'])) {
         <dt class="text-muted">Description</dt>
         <dd class='pl-4'>
             <p class=""><?= isset($description) ? $description : 'N/A' ?></p>
+        </dd>
+
+        <!-- GL codes -->
+        <dt class="text-muted">GL Code</dt>
+        <dd class='pl-4'>
+            <p class=""><?= isset($gl_code) ? $gl_code : 'None' ?></p>
         </dd>
 
         <!-- Description -->

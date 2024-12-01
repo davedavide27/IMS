@@ -16,7 +16,7 @@ class Users extends DBConnection
 	public function save_users()
 	{
 		if (!isset($_POST['status']) && $this->settings->userdata('login_type') == 1) {
-			$_POST['status'] = 1; // Default status for new users
+			$_POST['status'] = 1; // Default status for new users_inventory
 		}
 
 		extract($_POST);
@@ -31,7 +31,7 @@ class Users extends DBConnection
 		}
 
 		// Check for duplicate username
-		$chk = $this->conn->query("SELECT * FROM `users` WHERE username ='{$username}' " . ($id > 0 ? "AND id != '{$id}'" : ""))->num_rows;
+		$chk = $this->conn->query("SELECT * FROM `users_inventory` WHERE username ='{$username}' " . ($id > 0 ? "AND id != '{$id}'" : ""))->num_rows;
 		if ($chk > 0) {
 			return 3; // Username already exists
 		}
@@ -53,7 +53,7 @@ class Users extends DBConnection
 
 		// Insert new user
 		if (empty($id)) {
-			$qry = $this->conn->query("INSERT INTO users SET {$data}");
+			$qry = $this->conn->query("INSERT INTO users_inventory SET {$data}");
 			if ($qry) {
 				$id = $this->conn->insert_id; // Get the new user ID
 				$this->settings->set_flashdata('success', 'User Details successfully saved.');
@@ -64,7 +64,7 @@ class Users extends DBConnection
 		}
 		// Update existing user
 		else {
-			$qry = $this->conn->query("UPDATE users SET $data WHERE id = {$id}");
+			$qry = $this->conn->query("UPDATE users_inventory SET $data WHERE id = {$id}");
 			if ($qry) {
 				$this->settings->set_flashdata('success', 'User Details successfully updated.');
 				if ($id == $this->settings->userdata('id')) {
@@ -108,7 +108,7 @@ class Users extends DBConnection
 				}
 			}
 			if (isset($uploaded_img)) {
-				$this->conn->query("UPDATE users SET `avatar` = CONCAT('{$fname}', '?v=', unix_timestamp(CURRENT_TIMESTAMP)) WHERE id = '{$id}' ");
+				$this->conn->query("UPDATE users_inventory SET `avatar` = CONCAT('{$fname}', '?v=', unix_timestamp(CURRENT_TIMESTAMP)) WHERE id = '{$id}' ");
 				if ($id == $this->settings->userdata('id')) {
 					$this->settings->set_userdata('avatar', $fname);
 				}
@@ -123,8 +123,8 @@ class Users extends DBConnection
 	public function delete_users()
 	{
 		extract($_POST);
-		$avatar = $this->conn->query("SELECT avatar FROM users where id = '{$id}'")->fetch_array()['avatar'];
-		$qry = $this->conn->query("DELETE FROM users where id = $id");
+		$avatar = $this->conn->query("SELECT avatar FROM users_inventory where id = '{$id}'")->fetch_array()['avatar'];
+		$qry = $this->conn->query("DELETE FROM users_inventory where id = $id");
 		if ($qry) {
 			$avatar = explode("?", $avatar)[0];
 			$this->settings->set_flashdata('success', 'User Details successfully deleted.');

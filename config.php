@@ -23,10 +23,10 @@ function validate_image($file){
 		if(is_file(base_app.$file)){
 			return base_url.$file.$param;
 		}else{
-			return base_url.'dist/img/no-image-available.png';
+			return base_url.'dist/img/no-image.jpg';
 		}
 	}else{
-		return base_url.'dist/img/no-image-available.png';
+		return base_url.'dist/img/no-image.jpg';
 	}
 }
 function isMobileDevice(){
