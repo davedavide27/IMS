@@ -91,6 +91,7 @@
                   </p>
                 </a>
               </li>
+              <?php if ($user_type != 2): // Hide for user type 2 (staff) ?>
               <li class="nav-header">Maintenance</li>
               <li class="nav-item dropdown">
                 <a href="<?php echo base_url ?>admin/?page=products" class="nav-link text-light nav-products">
@@ -108,6 +109,7 @@
                   </p>
                 </a>
               </li>
+              <?php endif; ?>
               <?php if ($_settings->userdata('type') == 1): ?>
                 <li class="nav-item dropdown">
                   <a href="<?php echo base_url ?>admin/?page=user/list" class="nav-link text-light nav-user_list">
