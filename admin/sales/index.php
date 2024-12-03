@@ -78,20 +78,20 @@ if (!$sales) {
             <!-- Actions Dropdown -->
             <?php if ($user_type == '3'): // Only display for user type 3 (manager) 
             ?>
-            <div class="dropdown">
-                <button class="btn btn-primary btn-flat btn-sm dropdown-toggle" type="button" id="actionsDropdown" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                    <i class="fa fa-check-circle"></i> Actions
-                </button>
-                <div class="dropdown-menu" aria-labelledby="actionsDropdown">
-                    <button class="dropdown-item approve_data" type="button" data-status="1">
-                        <i class="fa fa-check" style="color: green;"></i> Approve Selected
+                <div class="dropdown">
+                    <button class="btn btn-primary btn-flat btn-sm dropdown-toggle" type="button" id="actionsDropdown" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                        <i class="fa fa-check-circle"></i> Actions
                     </button>
-                    <button class="dropdown-item deny_data" type="button" data-status="2">
-                        <i class="fa fa-times" style="color: red;"></i> Deny Selected
-                    </button>
+                    <div class="dropdown-menu" aria-labelledby="actionsDropdown">
+                        <button class="dropdown-item approve_data" type="button" data-status="1">
+                            <i class="fa fa-check" style="color: green;"></i> Approve Selected
+                        </button>
+                        <button class="dropdown-item deny_data" type="button" data-status="2">
+                            <i class="fa fa-times" style="color: red;"></i> Deny Selected
+                        </button>
+                    </div>
                 </div>
-            </div>
-            <?php endif; 
+            <?php endif;
             ?>
         </div>
 
@@ -109,9 +109,12 @@ if (!$sales) {
             </button>
         </div>
         <div class="card-tools" style="position: absolute; right: 0; padding-right: 20px;">
-            <button class="btn btn-primary btn-flat btn-sm" id="create_new" type="button">
-                <i class="fa fa-pen-square"></i> Add New Sales Entry
-            </button>
+            <?php if ($user_type != 3): // Hide the button for user type 3 
+            ?>
+                <button class="btn btn-primary btn-flat btn-sm" id="create_new" type="button">
+                    <i class="fa fa-pen-square"></i> Add New Sales Entry
+                </button>
+            <?php endif; ?>
         </div>
     </div>
 

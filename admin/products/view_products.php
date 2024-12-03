@@ -17,10 +17,14 @@ if (isset($_GET['id'])) {
 
     /* Style for wrapping long descriptions */
     .description {
-        word-wrap: break-word; /* Break long words */
-        overflow-wrap: break-word; /* For better compatibility */
-        max-height: 300px; /* Set a maximum height for the description */
-        overflow: hidden; /* Hide overflow if the content is too long */
+        word-wrap: break-word;
+        /* Break long words */
+        overflow-wrap: break-word;
+        /* For better compatibility */
+        max-height: 300px;
+        /* Set a maximum height for the description */
+        overflow: hidden;
+        /* Hide overflow if the content is too long */
     }
 </style>
 
@@ -59,6 +63,25 @@ if (isset($_GET['id'])) {
                     break;
                 case 0:
                     echo '<span class="badge badge-primary bg-gradient-primary px-3 rounded-pill">Active</span>';
+                    break;
+                default:
+                    echo '<span class="badge badge-default border px-3 rounded-pill">N/A</span>';
+                    break;
+            }
+            ?>
+        </dd>
+
+        <!-- Status -->
+        <dt class="text-muted">Remarks</dt>
+        <dd class='pl-4 fs-4 fw-bold'>
+            <?php
+            $remarks = isset($remarks) ? $remarks : 0; // Correct status field
+            switch ($remarks) {
+                case 1:
+                    echo '<span class="badge badge-danger bg-gradient-success px-3 rounded-pill">Approved</span>';
+                    break;
+                case 0:
+                    echo '<span class="badge badge-primary bg-gradient-warning px-3 rounded-pill">Pending</span>';
                     break;
                 default:
                     echo '<span class="badge badge-default border px-3 rounded-pill">N/A</span>';

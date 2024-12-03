@@ -746,67 +746,67 @@ class Master extends DBConnection
 		if (session_status() === PHP_SESSION_NONE) {
 			session_start(); // Start session if not already active
 		}
-	
+
 		header('Content-Type: application/json');
-	
+
 		$resp = ['status' => 'failed', 'msg' => 'An unexpected error occurred.'];
-	
+
 		// Decode JSON input
 		$input_data = json_decode(file_get_contents('php://input'), true);
-	
+
 		$entry_codes = $input_data['entry_codes'] ?? null; // Array of entry codes
 		$status = $input_data['status'] ?? null;
-	
+
 		// Validate input data
 		if (is_null($entry_codes) || !is_array($entry_codes) || empty($entry_codes)) {
 			$resp['msg'] = "Invalid request. Missing or invalid entry codes.";
 			echo json_encode($resp);
 			return;
 		}
-	
+
 		if (is_null($status) || !in_array($status, [0, 1, 2])) {
 			$resp['msg'] = "Invalid status value. Allowed values are 0 (NO STATUS), 1 (APPROVED), or 2 (DENIED).";
 			echo json_encode($resp);
 			return;
 		}
-	
+
 		$status = (int)$status;
-	
+
 		// Sanitize and cast entry codes to integers
 		$sanitized_entry_codes = array_map('intval', $entry_codes);
-	
+
 		// Ensure there's at least one valid entry code
 		if (count($sanitized_entry_codes) === 0) {
 			$resp['msg'] = "No valid entry codes provided.";
 			echo json_encode($resp);
 			return;
 		}
-	
+
 		// Build the placeholders for the IN clause based on the entry codes
 		$placeholders = implode(',', array_fill(0, count($sanitized_entry_codes), '?'));
-	
+
 		// Check current statuses of selected entries
 		$check_sql = "SELECT `entry_code`, `status` FROM `inventory_entries` WHERE `entry_code` IN ($placeholders)";
 		$stmt = $this->conn->prepare($check_sql);
-	
+
 		if (!$stmt) {
 			$resp['msg'] = "Failed to prepare the query for status check.";
 			$resp['error'] = $this->conn->error;
 			echo json_encode($resp);
 			return;
 		}
-	
+
 		// Bind parameters as integers for entry codes
 		$stmt->bind_param(str_repeat('i', count($sanitized_entry_codes)), ...$sanitized_entry_codes);
 		$stmt->execute();
 		$check_result = $stmt->get_result();
-	
+
 		if (!$check_result || $check_result->num_rows === 0) {
 			$resp['msg'] = "No inventory entries found with the provided entry codes.";
 			echo json_encode($resp);
 			return;
 		}
-	
+
 		// Determine entries already in the desired status
 		$existing_entries = [];
 		while ($row = $check_result->fetch_assoc()) {
@@ -814,12 +814,12 @@ class Master extends DBConnection
 				$existing_entries[] = $row['entry_code'];
 			}
 		}
-	
+
 		$stmt->close();
-	
+
 		// Filter out entries already updated
 		$entry_codes_to_update = array_diff($sanitized_entry_codes, $existing_entries);
-	
+
 		if (empty($entry_codes_to_update)) {
 			$statusText = $status === 1 ? 'APPROVED' : ($status === 2 ? 'DENIED' : 'NO STATUS');
 			$resp['msg'] = "All selected entries are already marked as '{$statusText}'.";
@@ -827,25 +827,25 @@ class Master extends DBConnection
 			echo json_encode($resp);
 			return;
 		}
-	
+
 		// Update statuses for remaining entries
 		$update_placeholders = implode(',', array_fill(0, count($entry_codes_to_update), '?'));
 		$update_sql = "UPDATE `inventory_entries` SET `status` = ? WHERE `entry_code` IN ($update_placeholders)";
 		$stmt = $this->conn->prepare($update_sql);
-	
+
 		if (!$stmt) {
 			$resp['msg'] = "Failed to prepare the update query.";
 			$resp['error'] = $this->conn->error;
 			echo json_encode($resp);
 			return;
 		}
-	
+
 		// Prepare parameters for the update query (status followed by entry codes)
 		$params = array_merge([$status], $entry_codes_to_update);
-	
+
 		// Bind the status (as integer) and the entry codes (as integers)
 		$stmt->bind_param(str_repeat('i', 1) . str_repeat('i', count($entry_codes_to_update)), ...$params);
-	
+
 		if ($stmt->execute()) {
 			if ($stmt->affected_rows > 0) {
 				$statusText = $status === 1 ? 'APPROVED' : ($status === 2 ? 'DENIED' : 'NO STATUS');
@@ -858,14 +858,14 @@ class Master extends DBConnection
 			$resp['msg'] = "Failed to update entry statuses.";
 			$resp['error'] = $this->conn->error;
 		}
-	
+
 		$stmt->close();
-	
+
 		echo json_encode($resp);
 		error_log("Check SQL: " . $check_sql);
 		error_log("Update SQL: " . $update_sql);
 	}
-	
+
 
 
 	// Function to filter sales entries by PO number
@@ -1160,11 +1160,7 @@ class Master extends DBConnection
 	}
 
 
-
-
-
-
-	public function update_sales_status()
+	public function update_product_remarks()
 	{
 		if (session_status() === PHP_SESSION_NONE) {
 			session_start(); // Start session if not already active
@@ -1177,83 +1173,71 @@ class Master extends DBConnection
 		// Decode JSON input
 		$input_data = json_decode(file_get_contents('php://input'), true);
 	
-		$sales_codes = $input_data['sales_codes'] ?? null; // Array of sales codes
-		$status = $input_data['status'] ?? null;
+		$product_ids = $input_data['product_ids'] ?? null; // Array of product IDs
+		$remarks = $input_data['remarks'] ?? null;
 	
 		// Validate input data
-		if (is_null($sales_codes) || !is_array($sales_codes) || empty($sales_codes)) {
-			$resp['msg'] = "Invalid request. Missing or invalid sales codes.";
+		if (is_null($product_ids) || !is_array($product_ids) || empty($product_ids)) {
+			$resp['msg'] = "Invalid request. Missing or invalid product IDs.";
 			echo json_encode($resp);
 			return;
 		}
 	
-		if (is_null($status) || !in_array($status, [1, 2])) {
-			$resp['msg'] = "Invalid status value. Allowed values are 1 (APPROVED) or 2 (DENIED).";
+		if (is_null($remarks) || !in_array($remarks, [0, 1])) {
+			$resp['msg'] = "Invalid remarks value. Allowed values are 0 (Pending) or 1 (Approved).";
 			echo json_encode($resp);
 			return;
 		}
 	
-		$status = (int)$status;
+		// Convert 0 and 1 to human-readable values
+		$remarks_text = ($remarks === 1) ? 'Approved' : 'Pending';
 	
-		// Sanitize and cast sales codes to integers
-		$sanitized_sales_codes = array_map('intval', $sales_codes);
+		// Sanitize and cast product IDs to integers
+		$sanitized_product_ids = array_map('intval', $product_ids);
 	
-		// Ensure there's at least one valid sales code
-		if (count($sanitized_sales_codes) === 0) {
-			$resp['msg'] = "No valid sales codes provided.";
+		// Ensure there's at least one valid product ID
+		if (count($sanitized_product_ids) === 0) {
+			$resp['msg'] = "No valid product IDs provided.";
 			echo json_encode($resp);
 			return;
 		}
 	
-		// Build the placeholders for the IN clause based on the sales codes
-		$placeholders = implode(',', array_fill(0, count($sanitized_sales_codes), '?'));
+		// Build the placeholders for the IN clause based on the product IDs
+		$placeholders = implode(',', array_fill(0, count($sanitized_product_ids), '?'));
 	
-		// Check current statuses of selected sales entries
-		$check_sql = "SELECT `sales_code`, `status` FROM `sales` WHERE `sales_code` IN ($placeholders)";
+		// Check current remarks for selected products
+		$check_sql = "SELECT `remarks` FROM `products` WHERE `id` IN ($placeholders)";
 		$stmt = $this->conn->prepare($check_sql);
-	
+		
 		if (!$stmt) {
-			$resp['msg'] = "Failed to prepare the query for status check.";
+			$resp['msg'] = "Failed to prepare the check query.";
 			$resp['error'] = $this->conn->error;
 			echo json_encode($resp);
 			return;
 		}
 	
-		// Bind parameters as integers for sales codes
-		$stmt->bind_param(str_repeat('i', count($sanitized_sales_codes)), ...$sanitized_sales_codes);
+		// Bind product IDs to the query
+		$stmt->bind_param(str_repeat('i', count($sanitized_product_ids)), ...$sanitized_product_ids);
 		$stmt->execute();
-		$check_result = $stmt->get_result();
+		$result = $stmt->get_result();
+		
+		$current_remarks = [];
+		while ($row = $result->fetch_assoc()) {
+			$current_remarks[] = $row['remarks'];
+		}
 	
-		if (!$check_result || $check_result->num_rows === 0) {
-			$resp['msg'] = "No sales entries found with the provided sales codes.";
+		// Check if all selected products have the same remarks as the target
+		if (count(array_unique($current_remarks)) === 1 && $current_remarks[0] === $remarks) {
+			$resp['status'] = 'warning';
+			$resp['msg'] = "All selected products are already marked as '{$remarks_text}' and no update was made.";
 			echo json_encode($resp);
 			return;
 		}
 	
-		// Determine entries already in the desired status
-		$existing_entries = [];
-		while ($row = $check_result->fetch_assoc()) {
-			if ((int)$row['status'] === $status) {
-				$existing_entries[] = $row['sales_code'];
-			}
-		}
-	
-		$stmt->close();
-	
-		// Filter out entries already updated
-		$sales_codes_to_update = array_diff($sanitized_sales_codes, $existing_entries);
-	
-		if (empty($sales_codes_to_update)) {
-			$statusText = $status === 1 ? 'APPROVED' : 'DENIED';
-			$resp['msg'] = "All selected entries are already marked as '{$statusText}'.";
-			$resp['status'] = 'no_update';
-			echo json_encode($resp);
-			return;
-		}
-	
-		// Update statuses for remaining entries
-		$update_placeholders = implode(',', array_fill(0, count($sales_codes_to_update), '?'));
-		$update_sql = "UPDATE `sales` SET `status` = ? WHERE `sales_code` IN ($update_placeholders)";
+		// Update remarks for selected products
+		$update_sql = "UPDATE `products` 
+					   SET `remarks` = ? 
+					   WHERE `id` IN ($placeholders)";
 		$stmt = $this->conn->prepare($update_sql);
 	
 		if (!$stmt) {
@@ -1263,12 +1247,136 @@ class Master extends DBConnection
 			return;
 		}
 	
+		// Prepare parameters for the update query (remarks followed by product IDs)
+		$params = array_merge([$remarks], $sanitized_product_ids);
+	
+		// Bind the remarks (as integer) and the product IDs (as integers)
+		$stmt->bind_param(str_repeat('i', 1) . str_repeat('i', count($sanitized_product_ids)), ...$params);
+	
+		if ($stmt->execute()) {
+			if ($stmt->affected_rows > 0) {
+				$resp['status'] = 'success';
+				$resp['msg'] = "The remarks for the selected product entries have been successfully updated to '{$remarks_text}'.";
+			} else {
+				$resp['msg'] = "No entries were updated. Please check the provided product IDs.";
+			}
+		} else {
+			$resp['msg'] = "Failed to update product remarks.";
+			$resp['error'] = $this->conn->error;
+		}
+	
+		$stmt->close();
+	
+		echo json_encode($resp);
+	}
+	
+	
+
+	public function update_sales_status()
+	{
+		if (session_status() === PHP_SESSION_NONE) {
+			session_start(); // Start session if not already active
+		}
+
+		header('Content-Type: application/json');
+
+		$resp = ['status' => 'failed', 'msg' => 'An unexpected error occurred.'];
+
+		// Decode JSON input
+		$input_data = json_decode(file_get_contents('php://input'), true);
+
+		$sales_codes = $input_data['sales_codes'] ?? null; // Array of sales codes
+		$status = $input_data['status'] ?? null;
+
+		// Validate input data
+		if (is_null($sales_codes) || !is_array($sales_codes) || empty($sales_codes)) {
+			$resp['msg'] = "Invalid request. Missing or invalid sales codes.";
+			echo json_encode($resp);
+			return;
+		}
+
+		if (is_null($status) || !in_array($status, [1, 2])) {
+			$resp['msg'] = "Invalid status value. Allowed values are 1 (APPROVED) or 2 (DENIED).";
+			echo json_encode($resp);
+			return;
+		}
+
+		$status = (int)$status;
+
+		// Sanitize and cast sales codes to integers
+		$sanitized_sales_codes = array_map('intval', $sales_codes);
+
+		// Ensure there's at least one valid sales code
+		if (count($sanitized_sales_codes) === 0) {
+			$resp['msg'] = "No valid sales codes provided.";
+			echo json_encode($resp);
+			return;
+		}
+
+		// Build the placeholders for the IN clause based on the sales codes
+		$placeholders = implode(',', array_fill(0, count($sanitized_sales_codes), '?'));
+
+		// Check current statuses of selected sales entries
+		$check_sql = "SELECT `sales_code`, `status` FROM `sales` WHERE `sales_code` IN ($placeholders)";
+		$stmt = $this->conn->prepare($check_sql);
+
+		if (!$stmt) {
+			$resp['msg'] = "Failed to prepare the query for status check.";
+			$resp['error'] = $this->conn->error;
+			echo json_encode($resp);
+			return;
+		}
+
+		// Bind parameters as integers for sales codes
+		$stmt->bind_param(str_repeat('i', count($sanitized_sales_codes)), ...$sanitized_sales_codes);
+		$stmt->execute();
+		$check_result = $stmt->get_result();
+
+		if (!$check_result || $check_result->num_rows === 0) {
+			$resp['msg'] = "No sales entries found with the provided sales codes.";
+			echo json_encode($resp);
+			return;
+		}
+
+		// Determine entries already in the desired status
+		$existing_entries = [];
+		while ($row = $check_result->fetch_assoc()) {
+			if ((int)$row['status'] === $status) {
+				$existing_entries[] = $row['sales_code'];
+			}
+		}
+
+		$stmt->close();
+
+		// Filter out entries already updated
+		$sales_codes_to_update = array_diff($sanitized_sales_codes, $existing_entries);
+
+		if (empty($sales_codes_to_update)) {
+			$statusText = $status === 1 ? 'APPROVED' : 'DENIED';
+			$resp['msg'] = "All selected entries are already marked as '{$statusText}'.";
+			$resp['status'] = 'no_update';
+			echo json_encode($resp);
+			return;
+		}
+
+		// Update statuses for remaining entries
+		$update_placeholders = implode(',', array_fill(0, count($sales_codes_to_update), '?'));
+		$update_sql = "UPDATE `sales` SET `status` = ? WHERE `sales_code` IN ($update_placeholders)";
+		$stmt = $this->conn->prepare($update_sql);
+
+		if (!$stmt) {
+			$resp['msg'] = "Failed to prepare the update query.";
+			$resp['error'] = $this->conn->error;
+			echo json_encode($resp);
+			return;
+		}
+
 		// Prepare parameters for the update query (status followed by sales codes)
 		$params = array_merge([$status], $sales_codes_to_update);
-	
+
 		// Bind the status (as integer) and the sales codes (as integers)
 		$stmt->bind_param(str_repeat('i', 1) . str_repeat('i', count($sales_codes_to_update)), ...$params);
-	
+
 		if ($stmt->execute()) {
 			if ($stmt->affected_rows > 0) {
 				$statusText = $status === 1 ? 'APPROVED' : 'DENIED';
@@ -1281,14 +1389,13 @@ class Master extends DBConnection
 			$resp['msg'] = "Failed to update sales entry statuses.";
 			$resp['error'] = $this->conn->error;
 		}
-	
+
 		$stmt->close();
-	
+
 		echo json_encode($resp);
 		error_log("Check SQL: " . $check_sql);
 		error_log("Update SQL: " . $update_sql);
 	}
-	
 }
 /*
 	function save_group()
@@ -1642,6 +1749,10 @@ switch ($action) {
 
 	case 'update_sales_status':
 		echo $Master->update_sales_status();
+		break;
+
+	case 'update_product_remarks': // Add this new case
+		echo $Master->update_product_remarks();
 		break;
 
 	case 'check_product_exist':

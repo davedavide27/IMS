@@ -145,9 +145,12 @@ if ($inventory) {
 
         <!-- Add New Purchase Entry Button -->
         <div class="card-tools" style="position: absolute; right: 0; padding-right: 20px;">
-            <button class="btn btn-primary btn-flat btn-sm" id="create_new" type="button">
-                <i class="fa fa-pen-square"></i> Add New Purchase Entry
-            </button>
+            <?php if ($user_type != 3): // Hide the button for user type 3 
+            ?>
+                <button class="btn btn-primary btn-flat btn-sm" id="create_new" type="button">
+                    <i class="fa fa-pen-square"></i> Add New Purchase Entry
+                </button>
+            <?php endif; ?>
         </div>
     </div>
 
@@ -417,78 +420,78 @@ if ($inventory) {
 
 
     $(document).ready(function() {
-    // Select All Checkbox Event
-    $('#selectAll').change(function() {
-        const isChecked = $(this).prop('checked');
+        // Select All Checkbox Event
+        $('#selectAll').change(function() {
+            const isChecked = $(this).prop('checked');
 
-        // Only select checkboxes for visible rows
-        $("tr:visible .selectItem").prop('checked', isChecked);
-    });
-
-    // Individual Checkbox Change Event
-    $(".selectItem").change(function() {
-        const isChecked = $(this).prop('checked');
-        const visibleCheckboxes = $(".selectItem:visible");
-
-        // If any individual checkbox is unchecked, uncheck "Select All"
-        if (!isChecked) {
-            $('#selectAll').prop('checked', false);
-        }
-        // If all visible checkboxes are checked, check "Select All"
-        else if (visibleCheckboxes.length === $(".selectItem:checked:visible").length) {
-            $('#selectAll').prop('checked', true);
-        }
-    });
-
-    // Approve or Deny Action
-    $('.approve_data, .deny_data').click(function() {
-        const status = $(this).data('status');
-        const selectedEntries = collectSelectedEntries();
-
-        if (selectedEntries.length === 0) {
-            alert_toast('No entries selected for approval/denial.', 'error');
-            return;
-        }
-
-        fetch(_base_url_ + "classes/Master.php?f=update_status", {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                entry_codes: selectedEntries,
-                status: status
-            })
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.status === 'success') {
-                location.reload();
-                window.addEventListener('load', function() {
-                    alert_toast(data.msg, 'success');
-                }, 3000);
-            } else {
-                alert(data.msg);
-            }
-        })
-        .catch(err => {
-            console.error('Error:', err);
-            alert('An error occurred while processing your request.');
+            // Only select checkboxes for visible rows
+            $("tr:visible .selectItem").prop('checked', isChecked);
         });
-    });
 
-    // Function to Collect Selected Entry IDs (Only visible checkboxes)
-    function collectSelectedEntries() {
-        const selectedEntries = [];
-        $(".selectItem:checked:visible").each(function() {
-            const entryId = $(this).data('id');
-            if (entryId) {
-                selectedEntries.push(entryId);
+        // Individual Checkbox Change Event
+        $(".selectItem").change(function() {
+            const isChecked = $(this).prop('checked');
+            const visibleCheckboxes = $(".selectItem:visible");
+
+            // If any individual checkbox is unchecked, uncheck "Select All"
+            if (!isChecked) {
+                $('#selectAll').prop('checked', false);
+            }
+            // If all visible checkboxes are checked, check "Select All"
+            else if (visibleCheckboxes.length === $(".selectItem:checked:visible").length) {
+                $('#selectAll').prop('checked', true);
             }
         });
-        return selectedEntries;
-    }
-});
+
+        // Approve or Deny Action
+        $('.approve_data, .deny_data').click(function() {
+            const status = $(this).data('status');
+            const selectedEntries = collectSelectedEntries();
+
+            if (selectedEntries.length === 0) {
+                alert_toast('No entries selected for approval/denial.', 'error');
+                return;
+            }
+
+            fetch(_base_url_ + "classes/Master.php?f=update_status", {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        entry_codes: selectedEntries,
+                        status: status
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        location.reload();
+                        window.addEventListener('load', function() {
+                            alert_toast(data.msg, 'success');
+                        }, 3000);
+                    } else {
+                        alert(data.msg);
+                    }
+                })
+                .catch(err => {
+                    console.error('Error:', err);
+                    alert('An error occurred while processing your request.');
+                });
+        });
+
+        // Function to Collect Selected Entry IDs (Only visible checkboxes)
+        function collectSelectedEntries() {
+            const selectedEntries = [];
+            $(".selectItem:checked:visible").each(function() {
+                const entryId = $(this).data('id');
+                if (entryId) {
+                    selectedEntries.push(entryId);
+                }
+            });
+            return selectedEntries;
+        }
+    });
 
 
 
