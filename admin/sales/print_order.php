@@ -73,7 +73,7 @@ $full_logo_url = (!empty($logo_path) && file_exists(base_app . $logo_path))
 <body>
     <div class="purchase-order">
         <header>
-        <div class="logo">
+            <div class="logo">
                 <img src="<?php echo $full_logo_url; ?>"
                     alt="Company Logo"
                     class="brand-image"
@@ -113,15 +113,19 @@ $full_logo_url = (!empty($logo_path) && file_exists(base_app . $logo_path))
         </section>
 
         <section class="address-section">
-            <div class="to">
-                <h3>To:</h3>
-                <p>Company Name: ___________________</p>
-                <p>Company Address: ___________________</p>
-                <p>City, ST, ZIP Code: ___________________</p>
-                <p>Attn: ___________________</p>
-                <p>Phone: ________________</p>
-                <p>Fax: __________________</p>
-                <p>Email: ________________</p>
+            <div class="to" style="display: flex; justify-content: space-between; width: 100%; position: relative;">
+                <div class="left-column" style="width: 48%; padding-right: 10px;">
+                    <h3>To:</h3>
+                    <p>Company Name:_______________________</p>
+                    <p>Company Address:_____________________</p>
+                    <p>TIN Number:__________________________</p>
+                </div>
+                <div class="right-column" style="position: absolute; top: 0; right: 0; width: 31%; padding-left: 10px;">
+                    <h3 style="visibility: hidden;">This is hidden</h3>
+                    <p>Attn:__________________________</p>
+                    <p>Contact Number:________________</p>
+                    <p>Email:_________________________</p>
+                </div>
             </div>
         </section>
         <!--
@@ -152,65 +156,65 @@ $full_logo_url = (!empty($logo_path) && file_exists(base_app . $logo_path))
                 </thead>
             -->
         <tbody>
-        <?php
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    //echo '<pre>';
-   // print_r($_POST); // Inspect POST data
-    //echo '</pre>';
+            <?php
+            if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+                //echo '<pre>';
+                // print_r($_POST); // Inspect POST data
+                //echo '</pre>';
 
-    $subtotal = 0;
+                $subtotal = 0;
 
-    if (isset($_POST['entries']) && is_array($_POST['entries'])) {
-        echo "<table border='1' cellpadding='5' cellspacing='0'>";
-        echo "<thead>";
-        echo "<tr>";
-        echo "<th>No.</th>";
-        echo "<th>Product Name</th>";
-        echo "<th>Quantity</th>";
-        echo "<th>Price</th>";
-        echo "<th>Total</th>";
-        echo "</tr>";
-        echo "</thead>";
-        echo "<tbody>";
+                if (isset($_POST['entries']) && is_array($_POST['entries'])) {
+                    echo "<table border='1' cellpadding='5' cellspacing='0'>";
+                    echo "<thead>";
+                    echo "<tr>";
+                    echo "<th>No.</th>";
+                    echo "<th>Product Name</th>";
+                    echo "<th>Quantity</th>";
+                    echo "<th>Price</th>";
+                    echo "<th>Total</th>";
+                    echo "</tr>";
+                    echo "</thead>";
+                    echo "<tbody>";
 
-        $counter = 1;
+                    $counter = 1;
 
-        foreach ($_POST['entries'] as $row) {
-            $product_name = isset($row['product']) ? htmlspecialchars($row['product']) : '';
-            $quantity = isset($row['quantity']) ? (float)$row['quantity'] : 0;
-            $price = isset($row['price']) ? (float)$row['price'] : 0;
-            $total = $quantity * $price;
+                    foreach ($_POST['entries'] as $row) {
+                        $product_name = isset($row['product']) ? htmlspecialchars($row['product']) : '';
+                        $quantity = isset($row['quantity']) ? (float)$row['quantity'] : 0;
+                        $price = isset($row['price']) ? (float)$row['price'] : 0;
+                        $total = $quantity * $price;
 
-            $subtotal += $total;
+                        $subtotal += $total;
 
-            // Format the quantity with commas
-            $formatted_quantity = number_format($quantity);
+                        // Format the quantity with commas
+                        $formatted_quantity = number_format($quantity);
 
-            echo "<tr>";
-            echo "<td>" . $counter++ . "</td>";
-            echo "<td>" . $product_name . "</td>";
-            echo "<td>" . $formatted_quantity . "</td>"; // Display formatted quantity
-            echo "<td>₱" . number_format($price, 2) . "</td>";
-            echo "<td>₱" . number_format($total, 2) . "</td>";
-            echo "</tr>";
-        }
+                        echo "<tr>";
+                        echo "<td>" . $counter++ . "</td>";
+                        echo "<td>" . $product_name . "</td>";
+                        echo "<td>" . $formatted_quantity . "</td>"; // Display formatted quantity
+                        echo "<td>₱" . number_format($price, 2) . "</td>";
+                        echo "<td>₱" . number_format($total, 2) . "</td>";
+                        echo "</tr>";
+                    }
 
-        echo "</tbody>";
-        echo "</table>";
+                    echo "</tbody>";
+                    echo "</table>";
 
-        $vat = $subtotal * 0.12;
-        $grand_total = $subtotal + $vat;
+                    $vat = $subtotal * 0.12;
+                    $grand_total = $subtotal + $vat;
 
-        //echo "<h3>Subtotal: ₱" . number_format($subtotal, 2) . "</h3>";
-        //echo "<h3>VAT (12%): ₱" . number_format($vat, 2) . "</h3>";
-        //echo "<h3>Grand Total: ₱" . number_format($grand_total, 2) . "</h3>";
-    } else {
-        echo "<h4>No data found for the given entries.</h4>";
-    }
-} else {
-    echo "<h4>Invalid request method.</h4>";
-}
-?>
+                    //echo "<h3>Subtotal: ₱" . number_format($subtotal, 2) . "</h3>";
+                    //echo "<h3>VAT (12%): ₱" . number_format($vat, 2) . "</h3>";
+                    //echo "<h3>Grand Total: ₱" . number_format($grand_total, 2) . "</h3>";
+                } else {
+                    echo "<h4>No data found for the given entries.</h4>";
+                }
+            } else {
+                echo "<h4>Invalid request method.</h4>";
+            }
+            ?>
 
 
 
@@ -224,21 +228,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </section>
 
         <section class="totals">
-    <table>
-        <tr>
-            <td>Subtotal:</td>
-            <td>₱<?php echo number_format($subtotal, 2); ?></td>
-        </tr>
-        <tr>
-            <td>Output VAT (Tax) 12%:</td>
-            <td>₱<?php echo number_format($vat, 2); ?></td>
-        </tr>
-        <tr>
-            <td>Total:</td>
-            <td>₱<?php echo number_format($grand_total, 2); ?></td>
-        </tr>
-    </table>
-</section>
+            <table>
+                <tr>
+                    <td>Subtotal:</td>
+                    <td>₱<?php echo number_format($subtotal, 2); ?></td>
+                </tr>
+                <tr>
+                    <td>Output VAT (Tax) 12%:</td>
+                    <td>₱<?php echo number_format($vat, 2); ?></td>
+                </tr>
+                <tr>
+                    <td>Total:</td>
+                    <td>₱<?php echo number_format($grand_total, 2); ?></td>
+                </tr>
+            </table>
+        </section>
 
 
         <footer>
@@ -246,6 +250,52 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <p><?php echo $phone; ?> | <?php echo $email; ?></p>
 
         </footer>
+        <br>
+        <br>
+        <br>
+        <br>
+        <br>
+        <section class="signature-section" style="margin-top: 40px;">
+            <div class="signature-line" style="display: flex; justify-content: space-between; padding-top: 20px;">
+                <div style="width: 48%; text-align: center;">
+                    <p>_______________________</p>
+                    <p>Checked by: (Name)</p>
+                    <p>Purchasing Manager / Purchasing Staff</p>
+                </div>
+                <div style="width: 48%; text-align: center;">   
+                    <p>_______________________</p>
+                    <p>Checked by: (Name)</p>
+                    <p>Purchasing Manager / Purchasing Staff</p>
+                </div>
+            </div>
+
+            <div class="signature-line" style="display: flex; justify-content: space-between; padding-top: 20px;">
+                <div style="width: 48%; text-align: center;">
+                    <p>_______________________</p>
+                    <p>Noted by: (Name)</p>
+                    <p>GBU Manager</p>
+                </div>
+                <div style="width: 48%; text-align: center;">
+                    <p>_______________________</p>
+                    <p>Noted by: (Name)</p>
+                    <p>Operation Manager</p>
+                </div>
+            </div>
+
+            <div class="signature-line" style="display: flex; justify-content: space-between; padding-top: 20px;">
+                <div style="width: 48%; text-align: center;">
+                    <p>_______________________</p>
+                    <p>Audited by: (Name)</p>
+                    <p>Internal Auditor</p>
+                </div>
+                <div style="width: 48%; text-align: center;">
+                    <p>_______________________</p>
+                    <p>Approved by: (Name)</p>
+                    <p>Chief Operating Officer</p>
+                </div>
+            </div>
+        </section>
+
 
         <div class="print-button">
             <button onclick="window.print()">Print</button>

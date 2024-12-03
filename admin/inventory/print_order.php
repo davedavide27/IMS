@@ -114,17 +114,27 @@ $full_logo_url = (!empty($logo_path) && file_exists(base_app . $logo_path))
             <p style="text-align: left;">PO Date: <u>______________________</u></p>
         </section>
 
+
         <section class="address-section">
-            <div class="to">
-                <h3>To:</h3>
-                <p>Company Name: ___________________</p>
-                <p>Company Address: ___________________</p>
-                <p>TIN Number: ___________________</p>
-                <p>Attn: ___________________</p>
-                <p>Contact Number: ________________</p>
-                <p>Email: ________________</p>
+            <div class="to" style="display: flex; justify-content: space-between; width: 100%; position: relative;">
+                <div class="left-column" style="width: 48%; padding-right: 10px;">
+                    <h3>To:</h3>
+                    <p>Company Name:_______________________</p>
+                    <p>Company Address:_____________________</p>
+                    <p>TIN Number:__________________________</p>
+                </div>
+                <div class="right-column" style="position: absolute; top: 0; right: 0; width: 31%; padding-left: 10px;">
+                    <h3 style="visibility: hidden;">This is hidden</h3>
+                    <p>Attn:__________________________</p>
+                    <p>Contact Number:________________</p>
+                    <p>Email:_________________________</p>
+                </div>
             </div>
         </section>
+
+
+
+
         <!--
         <section class="shipment-details">
             <table>
@@ -283,6 +293,52 @@ $full_logo_url = (!empty($logo_path) && file_exists(base_app . $logo_path))
             <p><?php echo $phone; ?> | <?php echo $email; ?></p>
 
         </footer>
+        <br>
+        <br>
+        <br>
+        <br>
+        <br>
+        <section class="signature-section" style="margin-top: 40px;">
+            <div class="signature-line" style="display: flex; justify-content: space-between; padding-top: 20px;">
+                <div style="width: 48%; text-align: center;">
+                    <p>_______________________</p>
+                    <p>Checked by: (Name)</p>
+                    <p>Purchasing Manager / Purchasing Staff</p>
+                </div>
+                <div style="width: 48%; text-align: center;">   
+                    <p>_______________________</p>
+                    <p>Checked by: (Name)</p>
+                    <p>Purchasing Manager / Purchasing Staff</p>
+                </div>
+            </div>
+
+            <div class="signature-line" style="display: flex; justify-content: space-between; padding-top: 20px;">
+                <div style="width: 48%; text-align: center;">
+                    <p>_______________________</p>
+                    <p>Noted by: (Name)</p>
+                    <p>GBU Manager</p>
+                </div>
+                <div style="width: 48%; text-align: center;">
+                    <p>_______________________</p>
+                    <p>Noted by: (Name)</p>
+                    <p>Operation Manager</p>
+                </div>
+            </div>
+
+            <div class="signature-line" style="display: flex; justify-content: space-between; padding-top: 20px;">
+                <div style="width: 48%; text-align: center;">
+                    <p>_______________________</p>
+                    <p>Audited by: (Name)</p>
+                    <p>Internal Auditor</p>
+                </div>
+                <div style="width: 48%; text-align: center;">
+                    <p>_______________________</p>
+                    <p>Approved by: (Name)</p>
+                    <p>Chief Operating Officer</p>
+                </div>
+            </div>
+        </section>
+
 
         <div class="print-button">
             <button onclick="window.print()">Print</button>

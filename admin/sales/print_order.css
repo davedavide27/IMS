@@ -171,4 +171,9 @@ footer p {
     .print-button {
         display: none; /* Hide the print button when printing */
     }
+
+    .print-hidden-button {
+        visibility: hidden; /* Keep space occupied but hide the button */
+        height: 50px; /* Ensure space is occupied (adjust height as necessary) */
+    }
 }
