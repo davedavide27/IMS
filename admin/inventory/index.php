@@ -101,8 +101,33 @@ if ($inventory) {
 </style>
 <div class="card card-outline card-primary">
     <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
-        <h3 class="card-title">Purchase Entries For Purchases</h3>
+        <!-- Title and Approve Selected Button -->
+        <div style="display: flex; align-items: center; gap: 15px;">
+            <h3 class="card-title">Purchase Entries For Purchases</h3>
+
+            <!-- Actions Dropdown -->
+            <?php if ($user_type == '3'): // Only display for user type 3 (manager) 
+            ?>
+                <div class="dropdown">
+                    <button class="btn btn-primary btn-flat btn-sm dropdown-toggle" type="button" id="actionsDropdown" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                        <i class="fa fa-check-circle"></i> Actions
+                    </button>
+                    <div class="dropdown-menu" aria-labelledby="actionsDropdown">
+                        <button class="dropdown-item approve_data" type="button" data-status="1">
+                            <i class="fa fa-check" style="color: green;"></i> Approve Selected
+                        </button>
+                        <button class="dropdown-item deny_data" type="button" data-status="2">
+                            <i class="fa fa-times" style="color: red;"></i> Deny Selected
+                        </button>
+
+                    </div>
+                </div>
+            <?php endif; ?>
+        </div>
+
+        <!-- Filter Form and Print Button -->
         <div style="display: flex; align-items: center; gap: 15px; justify-content: center;">
+            <!-- Filter Form -->
             <form id="filterForm" class="form-inline" style="display: inline-block;">
                 <div class="input-group">
                     <input type="text" class="form-control form-control-sm" id="po_number_filter" placeholder="Filter by PO Number">
@@ -111,38 +136,49 @@ if ($inventory) {
                     </div>
                 </div>
             </form>
+
+            <!-- Print Button -->
             <button class="btn btn-secondary btn-flat btn-sm" id="printButton" type="button" onclick="submitPrintForm()">
                 <i class="fa fa-print"></i> Print
             </button>
         </div>
+
+        <!-- Add New Purchase Entry Button -->
         <div class="card-tools" style="position: absolute; right: 0; padding-right: 20px;">
             <button class="btn btn-primary btn-flat btn-sm" id="create_new" type="button">
                 <i class="fa fa-pen-square"></i> Add New Purchase Entry
             </button>
         </div>
     </div>
+
+    <!-- Card Body -->
     <div class="card-body">
         <div class="container-fluid">
+            <!-- Inventory Table -->
             <table class="table table-hover table-striped table-bordered" id="inventoryTable">
                 <colgroup>
-                    <col width="10%">
+                    <col width="7%">
                     <col width="5%">
                     <col width="5%">
-                    <col width="9%">
-                    <col width="6%">
-                    <col width="6%">
-                    <col width="4%">
-                    <col width="4%">
+                    <col width="5%">
+                    <col width="8%">
+                    <col width="5%">
+                    <col width="5%">
+                    <col width="7%">
+                    <col width="7%">
                 </colgroup>
                 <thead>
                     <tr>
+                        <th>
+                            <input type="checkbox" id="selectAll"><a> Select All</a>
+                        </th>
                         <th>Date</th>
                         <th>Entry Code</th>
                         <th>Product</th>
                         <th class="p-0">
                             <div class="d-flex w-100">
-                                <div class="col-5 border">Description</div>
-                                <div class="col-3 border">Quantity</div>
+                                <div class="col-4 border">Description</div>
+                                <div class="col-4 border">Quantity</div>
                                 <div class="col-4 border">Total Price</div>
                             </div>
                         </th>
@@ -152,6 +188,7 @@ if ($inventory) {
                         <th>Action</th>
                     </tr>
                 </thead>
+
                 <tbody>
                     <?php
                     $swhere = "";
@@ -179,14 +216,15 @@ if ($inventory) {
                         $purchase_price = isset($product['purchase_price']) ? $product['purchase_price'] : 0;
                         $total_price = $row['quantity'] * $purchase_price;
                     ?>
-                        <tr>
+                        <tr id="row-<?php echo $row['id']; ?>" class="<?php echo ($row['status'] == 1) ? 'approved' : (($row['status'] == 2) ? 'denied' : ''); ?>">
+                            <td><input type="checkbox" class="selectItem" data-id="<?php echo $row['entry_code']; ?>"></td>
                             <td class="text-center"><?php echo date("M d, Y", strtotime($row['entry_date'])); ?></td>
                             <td><?php echo htmlspecialchars($row['entry_code'], ENT_QUOTES); ?></td>
                             <td><?php echo htmlspecialchars($product_name, ENT_QUOTES); ?></td>
                             <td class="p-0">
                                 <div class="d-flex w-100">
-                                    <div class="col-5 border"><?php echo htmlspecialchars($row['description'], ENT_QUOTES); ?></div>
-                                    <div class="col-3 border text-right"><?php echo number_format($row['quantity']); ?></div>
+                                    <div class="col-4 border"><?php echo htmlspecialchars($row['description'], ENT_QUOTES); ?></div>
+                                    <div class="col-4 border text-right"><?php echo number_format($row['quantity']); ?></div>
                                     <div class="col-4 border text-right">₱<?php echo number_format($total_price, 2); ?></div>
                                 </div>
                             </td>
@@ -203,6 +241,7 @@ if ($inventory) {
                             </td>
                             <td><?php echo isset($user_arr[$row['user_id']]) ? htmlspecialchars($user_arr[$row['user_id']], ENT_QUOTES) : 'N/A'; ?></td>
                             <td class="text-center">
+                                <!-- Action Dropdown -->
                                 <button type="button" class="btn btn-flat btn-default btn-sm dropdown-toggle dropdown-icon" data-toggle="dropdown">
                                     Action
                                     <span class="sr-only">Toggle Dropdown</span>
@@ -231,15 +270,6 @@ if ($inventory) {
                                             </a>
                                         <?php } ?>
                                     <?php } ?>
-                                    <?php if ($user_type == 3) { ?>
-                                        <div class="dropdown-divider"></div>
-                                        <a class="dropdown-item approve_data" href="javascript:void(0)" data-entry_code="<?php echo $row['entry_code']; ?>" data-status="1">
-                                            <span class="fa fa-check text-success"></span> Approve
-                                        </a>
-                                        <a class="dropdown-item deny_data" href="javascript:void(0)" data-entry_code="<?php echo $row['entry_code']; ?>" data-status="2">
-                                            <span class="fa fa-times text-danger"></span> Deny
-                                        </a>
-                                    <?php } ?>
                                 </div>
                             </td>
                         </tr>
@@ -249,6 +279,7 @@ if ($inventory) {
         </div>
     </div>
 </div>
+
 
 <script>
     $(document).ready(function() {
@@ -325,6 +356,42 @@ if ($inventory) {
         });
 
 
+
+        // Fetch entry details for editing based on entry_code
+        function fetch_entry_details(entry_code) {
+            $.ajax({
+                url: _base_url_ + "classes/Master.php?f=get_inventory_entry", // API endpoint to fetch entry
+                method: "GET",
+                data: {
+                    entry_code: entry_code
+                }, // Pass entry_code as data
+                dataType: "json",
+                success: function(resp) {
+                    if (resp.status === 'success') {
+                        // Check if response data is valid
+                        if (resp.data) {
+                            // Populate the form with fetched data
+                            $('#entry_code').val(resp.data.entry_code).prop('readonly', true); // Make entry code read-only
+                            $('#entry_date').val(resp.data.entry_date);
+                            $('#description').val(resp.data.description);
+                            $('#product_id').val(resp.data.product_id).trigger('change');
+                            $('#quantity').val(resp.data.quantity);
+
+                            $('#uni_modal').modal('show'); // Show the modal for editing
+                        } else {
+                            alert_toast("No data found for this entry.", 'error');
+                        }
+                    } else {
+                        alert_toast("Entry not found.", 'error');
+                    }
+                },
+                error: function(err) {
+                    console.error(err); // Log error in console for debugging
+                    alert_toast("An error occurred while fetching entry details.", 'error');
+                }
+            });
+        }
+
         // Table setup
         $('.table td, .table th').addClass('py-1 px-2 align-middle');
 
@@ -345,108 +412,91 @@ if ($inventory) {
     });
 
 
-    // Handle the click event for the approve/deny options
-    $(document).on('click', '.approve_data, .deny_data', function() {
-        const entry_code = $(this).data('entry_code'); // Get the entry_code of the item
-        const status = $(this).data('status'); // Get the status (1: APPROVED, 2: DENIED)
 
-        // Map numeric status to text for confirmation message
-        let statusText = '';
-        if (status == 1) {
-            statusText = 'APPROVED';
-        } else if (status == 2) {
-            statusText = 'DENIED';
-        } else {
-            statusText = 'NO STATUS';
-        }
 
-        // Confirm the action with the same style as delete entry
-        _conf(`Are you sure you want to change the status to "${statusText}" for entry code "${entry_code}"?`, "update_inventory_status", [entry_code, status]);
-    });
+
 
     $(document).ready(function() {
-        // Check if there is a success message in sessionStorage
-        var successMessage = sessionStorage.getItem('update_status_message');
-        if (successMessage) {
-            // Display the success message using a custom toast or alert method
-            alert_toast(successMessage, 'success');
+    // Select All Checkbox Event
+    $('#selectAll').change(function() {
+        const isChecked = $(this).prop('checked');
 
-            // Remove the message after displaying it to avoid showing it again on page reload
-            sessionStorage.removeItem('update_status_message');
+        // Only select checkboxes for visible rows
+        $("tr:visible .selectItem").prop('checked', isChecked);
+    });
 
-            // Optional: Delay for 3 seconds before doing anything else if needed
-            setTimeout(function() {
-                // You can add additional logic here after the message duration ends
-            }, 3000); // 3-second duration
+    // Individual Checkbox Change Event
+    $(".selectItem").change(function() {
+        const isChecked = $(this).prop('checked');
+        const visibleCheckboxes = $(".selectItem:visible");
+
+        // If any individual checkbox is unchecked, uncheck "Select All"
+        if (!isChecked) {
+            $('#selectAll').prop('checked', false);
+        }
+        // If all visible checkboxes are checked, check "Select All"
+        else if (visibleCheckboxes.length === $(".selectItem:checked:visible").length) {
+            $('#selectAll').prop('checked', true);
         }
     });
 
+    // Approve or Deny Action
+    $('.approve_data, .deny_data').click(function() {
+        const status = $(this).data('status');
+        const selectedEntries = collectSelectedEntries();
 
-    // Function to update the inventory status
-    function update_inventory_status(entry_code, status) {
-        $.ajax({
-            url: _base_url_ + "classes/Master.php?f=update_status", // API endpoint to update the status
+        if (selectedEntries.length === 0) {
+            alert_toast('No entries selected for approval/denial.', 'error');
+            return;
+        }
+
+        fetch(_base_url_ + "classes/Master.php?f=update_status", {
             method: 'POST',
-            data: {
-                entry_code: entry_code, // Pass the entry_code as a string
-                status: status // Pass the status as a number (0, 1, or 2)
+            headers: {
+                'Content-Type': 'application/json'
             },
-            dataType: 'json',
-            success: function(resp) {
-                if (resp.status === 'success') {
-                    // Store the success message in sessionStorage for later use
-                    sessionStorage.setItem('update_status_message', resp.msg);
+            body: JSON.stringify({
+                entry_codes: selectedEntries,
+                status: status
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                location.reload();
+                window.addEventListener('load', function() {
+                    alert_toast(data.msg, 'success');
+                }, 3000);
+            } else {
+                alert(data.msg);
+            }
+        })
+        .catch(err => {
+            console.error('Error:', err);
+            alert('An error occurred while processing your request.');
+        });
+    });
 
-                    // Reload the page immediately
-                    location.reload();
-                } else {
-                    // Show error message from the response
-                    alert_toast(resp.msg || "An error occurred while updating the status.", 'error');
-                }
-            },
-            error: function(xhr, status, error) {
-                console.error('AJAX Error:', xhr.responseText); // Log any AJAX errors for debugging
-                alert_toast("An error occurred while updating the status.", 'error'); // Show a generic error message
+    // Function to Collect Selected Entry IDs (Only visible checkboxes)
+    function collectSelectedEntries() {
+        const selectedEntries = [];
+        $(".selectItem:checked:visible").each(function() {
+            const entryId = $(this).data('id');
+            if (entryId) {
+                selectedEntries.push(entryId);
             }
         });
+        return selectedEntries;
     }
+});
 
 
 
-    // Fetch entry details for editing based on entry_code
-    function fetch_entry_details(entry_code) {
-        $.ajax({
-            url: _base_url_ + "classes/Master.php?f=get_inventory_entry", // API endpoint to fetch entry
-            method: "GET",
-            data: {
-                entry_code: entry_code
-            }, // Pass entry_code as data
-            dataType: "json",
-            success: function(resp) {
-                if (resp.status === 'success') {
-                    // Check if response data is valid
-                    if (resp.data) {
-                        // Populate the form with fetched data
-                        $('#entry_code').val(resp.data.entry_code).prop('readonly', true); // Make entry code read-only
-                        $('#entry_date').val(resp.data.entry_date);
-                        $('#description').val(resp.data.description);
-                        $('#product_id').val(resp.data.product_id).trigger('change');
-                        $('#quantity').val(resp.data.quantity);
 
-                        $('#uni_modal').modal('show'); // Show the modal for editing
-                    } else {
-                        alert_toast("No data found for this entry.", 'error');
-                    }
-                } else {
-                    alert_toast("Entry not found.", 'error');
-                }
-            },
-            error: function(err) {
-                console.error(err); // Log error in console for debugging
-                alert_toast("An error occurred while fetching entry details.", 'error');
-            }
-        });
-    }
+
+
+
+
 
     // Form submission to save new or edited inventory entry
     $('#inventory-form').submit(function(e) {
@@ -539,12 +589,8 @@ if ($inventory) {
         // Create a new form element
         const form = document.createElement('form');
         form.method = 'POST';
-        form.action = window.location.origin + "/ajms/admin/inventory/print_order.php?page=inventory"; // Correct full path
-
-
-
-        // Add target="_blank" to open the form in a new tab
-        form.target = '_blank';
+        form.action = `${window.location.origin}/ajms/admin/inventory/print_order.php?page=inventory`; // Correct full path
+        form.target = '_blank'; // Open the form in a new tab
 
         // Add PO number to the form
         const poNumberInput = document.createElement('input');
@@ -555,89 +601,126 @@ if ($inventory) {
 
         // Select only visible rows in the table
         const rows = table.querySelectorAll('tbody tr:not([style="display: none;"])');
+        let entries = []; // Array to store entries for the form
+        let productsToFetchPrice = []; // Array to store product names for which we need to fetch the purchase price
+
         rows.forEach((row, rowIndex) => {
             const cells = row.querySelectorAll('td');
-            cells.forEach((cell, colIndex) => {
-                // Create hidden input fields for each table cell
-                const input = document.createElement('input');
-                input.type = 'hidden';
-                input.name = `entries[${rowIndex}][${colIndex}]`; // Structured name for easy processing
-                input.value = cell.textContent.trim();
-                form.appendChild(input);
-            });
+
+            if (cells.length < 7) {
+                console.warn(`Row ${rowIndex}: Insufficient cells. Skipping this row.`);
+                return; // Skip rows with insufficient columns
+            }
+
+            const statusCell = cells[6]; // Status column (adjust index if necessary)
+            if (!statusCell) {
+                console.warn(`Row ${rowIndex}: Status cell not found. Skipping this row.`);
+                return; // Skip rows with missing status cell
+            }
+
+            const status = statusCell.textContent.trim();
+            console.log(`Row ${rowIndex}: Status = ${status}`); // Debug log
+
+            // Check if the status is 'APPROVED'
+            if (status === 'APPROVED') {
+                // Only process rows with status 'APPROVED'
+                const productName = cells[3]?.textContent.trim() || "N/A"; // Product name (third column)
+                const flexContainer = cells[4]?.querySelector('.d-flex');
+
+                if (!flexContainer) {
+                    console.warn(`Row ${rowIndex}: Flex container not found. Skipping this row.`);
+                    return; // Skip if the flex container is missing
+                }
+
+                const description = flexContainer.querySelector('.col-4:nth-child(1)')?.textContent.trim() || "N/A";
+                const quantityText = flexContainer.querySelector('.col-4:nth-child(2)')?.textContent.trim() || "0";
+                const total = flexContainer.querySelector('.col-4:nth-child(3)')?.textContent.trim() || "0.00";
+
+                const quantity = parseFloat(quantityText.replace(/[^0-9.-]+/g, "")) || 0; // Parse quantity safely
+
+                // Add the product details to the entries array
+                entries.push({
+                    product_name: productName,
+                    description: description,
+                    quantity: quantity,
+                    total: total
+                });
+
+                // Add the product to the list of products to fetch purchase price
+                productsToFetchPrice.push(productName);
+            }
         });
 
-        // Append the form to the body and submit it
-        document.body.appendChild(form);
-        form.submit();
+        if (entries.length === 0) {
+            alert_toast("No products with status 'APPROVED' found.", 'error');
+            return; // Exit if no approved products are found
+        }
+
+        // Function to fetch purchase prices for all products
+        function fetchPurchasePrices(products) {
+            return new Promise((resolve, reject) => {
+                const promises = products.map(product => {
+                    return new Promise((resolveProduct, rejectProduct) => {
+                        const xhr = new XMLHttpRequest();
+                        xhr.open('GET', _base_url_ + "classes/Master.php?f=get_purchase_price_by_product_name&product_name=" + encodeURIComponent(product), true);
+                        xhr.onreadystatechange = function() {
+                            if (xhr.readyState === 4 && xhr.status === 200) {
+                                try {
+                                    const response = JSON.parse(xhr.responseText);
+                                    if (response.status === 'success') {
+                                        resolveProduct({
+                                            product_name: product,
+                                            purchase_price: response.purchase_price
+                                        });
+                                    } else {
+                                        resolveProduct({
+                                            product_name: product,
+                                            purchase_price: '0.00'
+                                        }); // If error, set default
+                                    }
+                                } catch (error) {
+                                    rejectProduct(error);
+                                }
+                            }
+                        };
+                        xhr.send();
+                    });
+                });
+
+                Promise.all(promises)
+                    .then(results => resolve(results))
+                    .catch(error => reject(error));
+            });
+        }
+
+        fetchPurchasePrices(productsToFetchPrice)
+            .then(priceResults => {
+                priceResults.forEach(priceData => {
+                    entries.forEach(entry => {
+                        if (entry.product_name === priceData.product_name) {
+                            entry.purchase_price = priceData.purchase_price;
+                        }
+                    });
+                });
+
+                // Add entries to the form as a JSON-encoded string
+                const entriesInput = document.createElement('input');
+                entriesInput.type = 'hidden';
+                entriesInput.name = 'entries';
+                entriesInput.value = JSON.stringify(entries);
+                form.appendChild(entriesInput);
+
+                document.body.appendChild(form);
+                form.submit();
+            })
+            .catch(error => {
+                console.error("Error fetching purchase prices:", error);
+                alert_toast("Error fetching purchase prices.", 'error');
+            });
     }
 
 
 
-    /*
-    // Function to handle the print functionality (only prints the table without the action column and action buttons)
-    function printPage() {
-        // Find the header for the "Action" column (Assume it's the last column)
-        const tableHeader = document.querySelector('#inventoryTable thead');
-        const actionColumnIndex = Array.from(tableHeader.rows[0].cells).findIndex(cell => cell.textContent.trim() === 'Action');
-
-        if (actionColumnIndex === -1) return; // If the "Action" column is not found, exit
-
-        // Hide the "Action" column header and all action columns (cells in rows)
-        const actionColumns = document.querySelectorAll(`#inventoryTable tbody tr td:nth-child(${actionColumnIndex + 1})`);
-        const actionColumnHeader = tableHeader.rows[0].cells[actionColumnIndex];
-
-        if (actionColumnHeader) actionColumnHeader.style.display = 'none'; // Hide the header
-        actionColumns.forEach(cell => cell.style.display = 'none'); // Hide the action cells
-
-        // Hide action dropdowns and buttons
-        const actionDropdowns = document.querySelectorAll('.dropdown-toggle, .dropdown-menu, .dropdown-item');
-        actionDropdowns.forEach(element => element.style.display = 'none'); // Hide action dropdown and items
-
-        // Get the table content for printing
-        const content = document.getElementById('inventoryTable').outerHTML;
-        const styles = `
-        <style>
-            body { font-family: Arial, sans-serif; }
-            table { width: 100%; border-collapse: collapse; }
-            table th, table td { padding: 8px; text-align: left; border: 1px solid #ddd; }
-            table th { background-color: #f2f2f2; }
-            table td { background-color: #ffffff; }
-            @media print {
-                body { margin: 0; padding: 0; }
-                table { margin-top: 20px; }
-            }
-        </style>
-    `;
-
-        // Open a new window for printing
-        const newWindow = window.open('', '', 'height=1200,width=800');
-        newWindow.document.write('<html><head><title>Print Table</title>' + styles + '</head><body>');
-        newWindow.document.write('<h3>Purchase Entries</h3>'); // Add a title to the print view
-        newWindow.document.write(content); // Write the table content into the new window
-        newWindow.document.write('</body></html>');
-        newWindow.document.close(); // Close the document to ensure it is ready
-
-        // Automatically close the print window after printing with a delay
-        newWindow.focus();
-
-        // Attach `onafterprint` to close the print window after a delay
-        newWindow.onafterprint = function() {
-            setTimeout(() => {
-                newWindow.close(); // Close the print window after 2 seconds
-            }, 2000); // Delay of 2 seconds (2000 milliseconds)
-        };
-
-        // Trigger the print dialog
-        newWindow.print();
-
-        // Restore the action column header, action cells, and buttons after printing
-        if (actionColumnHeader) actionColumnHeader.style.display = ''; // Restore action column header
-        actionColumns.forEach(cell => cell.style.display = ''); // Restore action cells
-        actionDropdowns.forEach(element => element.style.display = ''); // Restore action buttons
-    }
-
-*/
     // Function to format date in "M d, Y" format
     function formatDate(dateString) {
         const options = {
@@ -686,167 +769,201 @@ if ($inventory) {
         }
     });
 
-// Function to filter inventory entries by PO number
-function filterEntriesByPONumber(poNumber) {
-    console.log('Filtering inventory entries by PO Number:', poNumber);
+    // Function to filter inventory entries by PO number
+    function filterEntriesByPONumber(poNumber) {
+        console.log('Filtering inventory entries by PO Number:', poNumber);
 
-    // Send the PO number to the API endpoint
-    $.ajax({
-        url: _base_url_ + "classes/Master.php?f=filter_inventory_by_po_number", // API endpoint for filtering
-        method: "POST",
-        data: {
-            po_number: poNumber
-        },
-        success: function(response) {
-            try {
-                const result = JSON.parse(response); // Parse the response
+        // Send the PO number to the API endpoint
+        $.ajax({
+            url: _base_url_ + "classes/Master.php?f=filter_inventory_by_po_number", // API endpoint for filtering
+            method: "POST",
+            data: {
+                po_number: poNumber
+            },
+            success: function(response) {
+                try {
+                    const result = JSON.parse(response); // Parse the response
 
-                // Check if the response is successful
-                if (result.status === "success") {
-                    console.log('Filtered Entries:', result.filteredEntries);
-                    if (result.filteredEntries && result.filteredEntries.length > 0) {
-                        // Update the table with filtered entries
-                        updateTableWithFilteredEntries(result.filteredEntries, result.userType);
+                    // Check if the response is successful
+                    if (result.status === "success") {
+                        console.log('Filtered Entries:', result.filteredEntries);
+                        if (result.filteredEntries && result.filteredEntries.length > 0) {
+                            // Update the table with filtered entries
+                            updateTableWithFilteredEntries(result.filteredEntries, result.userType);
+                        } else {
+                            // If no entries are found, display a message
+                            alert_toast("No entries found for the given PO number.", 'warning');
+                            updateTableWithFilteredEntries([], result.userType); // Clear the table
+                        }
                     } else {
-                        // If no entries are found, display a message
-                        alert_toast("No entries found for the given PO number.", 'info');
+                        // If the response status is not success, display the error message
+                        alert_toast(result.msg, 'error');
                         updateTableWithFilteredEntries([], result.userType); // Clear the table
                     }
-                } else {
-                    // If the response status is not success, display the error message
-                    alert_toast(result.msg, 'error');
-                    updateTableWithFilteredEntries([], result.userType); // Clear the table
+                } catch (error) {
+                    console.error('Error parsing response:', error);
+                    alert_toast("An error occurred while filtering entries.", 'error');
                 }
-            } catch (error) {
-                console.error('Error parsing response:', error);
+            },
+            error: function(xhr, status, error) {
+                console.error('AJAX Error:', error);
                 alert_toast("An error occurred while filtering entries.", 'error');
             }
-        },
-        error: function(xhr, status, error) {
-            console.error('AJAX Error:', error);
-            alert_toast("An error occurred while filtering entries.", 'error');
-        }
-    });
-}
+        });
+    }
 
-function updateTableWithFilteredEntries(entries, userType) {
-    const tbody = document.querySelector('#inventoryTable tbody');
-    tbody.innerHTML = ''; // Clear current rows
+    function updateTableWithFilteredEntries(entries, userType) {
+        const tbody = document.querySelector('#inventoryTable tbody');
+        tbody.innerHTML = ''; // Clear current rows
 
-    // Define the status map for badges
-    const statusMap = {
-        0: '<span class="badge badge-dark">NO STATUS</span>',
-        1: '<span class="badge badge-success bg-gradient-success">APPROVED</span>',
-        2: '<span class="badge badge-danger bg-gradient-danger">DENIED</span>',
-    };
+        // Define the status map for badges
+        const statusMap = {
+            0: '<span class="badge badge-dark">NO STATUS</span>',
+            1: '<span class="badge badge-success bg-gradient-success">APPROVED</span>',
+            2: '<span class="badge badge-danger bg-gradient-danger">DENIED</span>',
+        };
 
-    if (entries.length > 0) {
-        entries.forEach(entry => {
-            // Ensure product_name and purchase_price exist before calculating total price
-            const product_name = entry.product_name || "N/A"; // Default to "N/A" if no product name
-            const purchase_price = parseFloat(entry.product_price) || 0; // Ensure it's a valid number
-            const quantity = parseInt(entry.quantity) || 0; // Ensure it's a valid number
-            const total_price = purchase_price * quantity; // Calculate the total price correctly
+        // Add the updated table header structure
+        const thead = document.querySelector('#inventoryTable thead');
+        thead.innerHTML = `
+        <tr>
+            <th>
+                <input type="checkbox" id="selectAll">
+            </th>
+            <th>Date</th>
+            <th>Entry Code</th>
+            <th>Product</th>
+            <th class="p-0">
+                <div class="d-flex w-100">
+                    <div class="col-4 border">Description</div>
+                    <div class="col-4 border">Quantity</div>
+                    <div class="col-4 border">Total Price</div>
+                </div>
+            </th>
+            <th>PO Number</th>
+            <th>Status</th>
+            <th>Recorded By</th>
+            <th>Action</th>
+        </tr>
+    `;
 
-            // Format the total price and quantity using format_num function
-            const formattedTotalPrice = format_num(total_price); // Apply formatting here
-            const formattedQuantity = format_num(quantity); // Apply formatting for quantity as well
 
-            // Get the username (fetched from the query)
-            const user_inventory_username = entry.user_inventory_username || "N/A"; // Default to "N/A" if no username
-            // Get the badge HTML based on status
-            const statusBadge = statusMap[entry.status] || statusMap[0];
+        // Add the checkbox logic for "Check All"
+        const selectAllCheckbox = document.getElementById('selectAll');
+        selectAllCheckbox.addEventListener('change', function() {
+            const checkboxes = document.querySelectorAll('.selectItem');
+            checkboxes.forEach(checkbox => {
+                checkbox.checked = selectAllCheckbox.checked;
+            });
+        });
 
-            // Create a new row for each entry
-            const row = document.createElement('tr');
+        if (entries.length > 0) {
+            entries.forEach(entry => {
+                // Ensure product_name and purchase_price exist before calculating total price
+                const product_name = entry.product_name || "N/A"; // Default to "N/A" if no product name
+                const purchase_price = parseFloat(entry.product_price) || 0; // Ensure it's a valid number
+                const quantity = parseInt(entry.quantity) || 0; // Ensure it's a valid number
+                const total_price = purchase_price * quantity; // Calculate the total price correctly
 
-            // Generate dropdown actions with conditions
-            let dropdownActions = '';
-            const isApproved = entry.status == 1;
-            const isDenied = entry.status == 2;
+                // Format the total price and quantity using format_num function
+                const formattedTotalPrice = format_num(total_price); // Apply formatting here
+                const formattedQuantity = format_num(quantity); // Apply formatting for quantity as well
 
-            // If userType is not manager (3), allow actions based on status
-            if (userType !== 3) { // If userType is not manager (3)
-                if (!isApproved) {
-                    dropdownActions = `
-                        <a class="dropdown-item view_data" href="javascript:void(0)" data-id="${entry.id}">
-                            <span class="fa fa-eye text-dark"></span> View
-                        </a>
-                        <div class="dropdown-divider"></div>
-                        <a class="dropdown-item edit_data" href="javascript:void(0)" data-code="${entry.entry_code}">
-                            <span class="fa fa-edit text-primary"></span> Edit
-                        </a>
-                        <div class="dropdown-divider"></div>
-                        <a class="dropdown-item delete_data" href="javascript:void(0)" data-code="${entry.entry_code}">
-                            <span class="fa fa-trash text-danger"></span> Delete
-                        </a>
-                    `;
-                } else {
-                    // Disable actions if the status is "APPROVED" or "DENIED"
-                    dropdownActions = `
-                        <a class="dropdown-item view_data" href="javascript:void(0)" data-id="${entry.id}">
-                            <span class="fa fa-eye text-dark"></span> View
-                        </a>
-                        <div class="dropdown-divider"></div>
-                        <a class="dropdown-item disabled" href="javascript:void(0)" aria-disabled="true">
-                            <span class="fa fa-edit text-muted"></span> Edit
-                        </a>
-                        <div class="dropdown-divider"></div>
-                        <a class="dropdown-item" href="javascript:void(0)" style="pointer-events: none; color: #ccc; cursor: not-allowed;">
-                            <span class="fa fa-trash text-muted"></span> Delete
-                        </a>
-                    `;
-                }
-            } else { // If userType is manager (3), hide Edit and Delete and add Approve/Deny actions
-                dropdownActions = `
+                // Get the username (fetched from the query)
+                const user_inventory_username = entry.user_inventory_username || "N/A"; // Default to "N/A" if no username
+                // Get the badge HTML based on status
+                const statusBadge = statusMap[entry.status] || statusMap[0];
+
+                // Create a new row for each entry
+                const row = document.createElement('tr');
+
+                // Generate dropdown actions with conditions
+                let dropdownActions = '';
+                const isApproved = entry.status == 1;
+                const isDenied = entry.status == 2;
+
+                // If userType is not manager (3), allow actions based on status
+                if (userType !== 3) { // If userType is not manager (3)
+                    if (!isApproved) {
+                        dropdownActions = `
                     <a class="dropdown-item view_data" href="javascript:void(0)" data-id="${entry.id}">
                         <span class="fa fa-eye text-dark"></span> View
                     </a>
                     <div class="dropdown-divider"></div>
-                    <a class="dropdown-item ${isApproved ? 'disabled' : ''}" href="javascript:void(0)" 
-                        data-entry_code="${entry.entry_code}" data-status="1" ${isApproved ? 'style="pointer-events: none; color: #ccc; cursor: not-allowed;"' : ''}>
-                        <span class="fa fa-check text-success"></span> Approve
+                    <a class="dropdown-item edit_data" href="javascript:void(0)" data-code="${entry.entry_code}">
+                        <span class="fa fa-edit text-primary"></span> Edit
                     </a>
-                    <a class="dropdown-item ${isDenied ? 'disabled' : ''}" href="javascript:void(0)" 
-                        data-entry_code="${entry.entry_code}" data-status="2" ${isDenied ? 'style="pointer-events: none; color: #ccc; cursor: not-allowed;"' : ''}>
-                        <span class="fa fa-times text-danger"></span> Deny
+                    <div class="dropdown-divider"></div>
+                    <a class="dropdown-item delete_data" href="javascript:void(0)" data-code="${entry.entry_code}">
+                        <span class="fa fa-trash text-danger"></span> Delete
                     </a>
                 `;
-            }
-
-            // Populate row data
-            row.innerHTML = `
-                <td class="text-center">${formatDate(entry.entry_date)}</td>
-                <td>${entry.entry_code}</td>
-                <td>${product_name}</td>
-                <td class="p-0">
-                    <div class="d-flex w-100">
-                        <div class="col-5 border">${entry.description || "N/A"}</div>
-                        <div class="col-3 border text-right">${formattedQuantity}</div>
-                        <div class="col-4 border text-right">₱${formattedTotalPrice}</div>
-                    </div>
-                </td>
-                <td>${entry.remarks || "N/A"}</td>
-                <td class="text-center">${statusBadge}</td>
-                <td>${user_inventory_username}</td>
-                <td class="text-center">
-                    <button type="button" class="btn btn-flat btn-default btn-sm dropdown-toggle dropdown-icon" data-toggle="dropdown">
-                        Action
-                        <span class="sr-only">Toggle Dropdown</span>
-                    </button>
-                    <div class="dropdown-menu" role="menu">
-                        ${dropdownActions}
-                    </div>
-                </td>
+                    } else {
+                        // Disable actions if the status is "APPROVED" or "DENIED"
+                        dropdownActions = `
+                    <a class="dropdown-item view_data" href="javascript:void(0)" data-id="${entry.id}">
+                        <span class="fa fa-eye text-dark"></span> View
+                    </a>
+                    <div class="dropdown-divider"></div>
+                    <a class="dropdown-item disabled" href="javascript:void(0)" aria-disabled="true">
+                        <span class="fa fa-edit text-muted"></span> Edit
+                    </a>
+                    <div class="dropdown-divider"></div>
+                    <a class="dropdown-item" href="javascript:void(0)" style="pointer-events: none; color: #ccc; cursor: not-allowed;">
+                        <span class="fa fa-trash text-muted"></span> Delete
+                    </a>
+                `;
+                    }
+                } else { // If userType is manager (3), hide Edit and Delete and add Approve/Deny actions
+                    dropdownActions = `
+                <a class="dropdown-item view_data" href="javascript:void(0)" data-id="${entry.id}">
+                    <span class="fa fa-eye text-dark"></span> View
+                </a>
+                <div class="dropdown-divider"></div>
+                <a class="dropdown-item ${isApproved ? 'disabled' : ''}" href="javascript:void(0)" 
+                    data-entry_code="${entry.entry_code}" data-status="1" ${isApproved ? 'style="pointer-events: none; color: #ccc; cursor: not-allowed;"' : ''}>
+                    <span class="fa fa-check text-success"></span> Approve
+                </a>
+                <a class="dropdown-item ${isDenied ? 'disabled' : ''}" href="javascript:void(0)" 
+                    data-entry_code="${entry.entry_code}" data-status="2" ${isDenied ? 'style="pointer-events: none; color: #ccc; cursor: not-allowed;"' : ''}>
+                    <span class="fa fa-times text-danger"></span> Deny
+                </a>
             `;
+                }
 
-            // Append the new row to the table
-            tbody.appendChild(row);
-        });
-    } else {
-        // If no filtered entries are found, show a message or leave the table empty
-        tbody.innerHTML = `<tr><td colspan="8" class="text-center">No entries found for the given PO number.</td></tr>`;
+                // Populate row data
+                row.innerHTML = `
+            <td><input type="checkbox" class="selectItem" data-id="${entry.id}" /></td>
+            <td class="text-center">${formatDate(entry.entry_date)}</td>
+            <td>${entry.entry_code}</td>
+            <td>${product_name}</td>
+            <td class="p-0">
+                <div class="d-flex w-100">
+                    <div class="col-4 border">${entry.description || "N/A"}</div>
+                    <div class="col-4 border text-right">${formattedQuantity}</div>
+                    <div class="col-4 border text-right">₱${formattedTotalPrice}</div>
+                </div>
+            </td>
+            <td>${entry.remarks || "N/A"}</td>
+            <td class="text-center">${statusBadge}</td>
+            <td>${user_inventory_username}</td>
+            <td class="text-center">
+                <button type="button" class="btn btn-flat btn-default btn-sm dropdown-toggle dropdown-icon" data-toggle="dropdown">
+                    Action
+                    <span class="sr-only">Toggle Dropdown</span>
+                </button>
+                <div class="dropdown-menu" role="menu">
+                    ${dropdownActions}
+                </div>
+            </td>
+        `;
+
+                // Append the new row to the table
+                tbody.appendChild(row);
+            });
+        } else {
+            // If no filtered entries are found, show a message or leave the table empty
+            tbody.innerHTML = `<tr><td colspan="9" class="text-center">No entries found for the given PO number.</td></tr>`;
+        }
     }
-}
-
 </script>

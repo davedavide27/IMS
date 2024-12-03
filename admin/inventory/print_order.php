@@ -2,12 +2,8 @@
 // Include the database connection (using your DBConnection class)
 require_once('./../../config.php');
 
-// Create an instance of the DBConnection class
-$db = new DBConnection;
-$conn = $db->conn; // MySQLi connection object
-
 // Fetch the company info from the system_info_inventory table
-$query = "SELECT * FROM system_info_inventory WHERE meta_field IN ('name', 'contact', 'email', 'company')"; // Modify query as needed
+$query = "SELECT * FROM system_info_inventory WHERE meta_field IN ('name', 'contact', 'email', 'company', 'logo')"; // Include 'logo'
 $result = $conn->query($query);
 
 // Initialize variables
@@ -16,6 +12,7 @@ $company_address = '';
 $city_zip = '';  // Note: Add logic to separate city, state, and zip if available in the meta_value
 $phone = '';
 $email = '';
+$logo_path = '';
 
 // Check if the query was successful
 if ($result) {
@@ -34,12 +31,22 @@ if ($result) {
             case 'company':
                 $company_address = htmlspecialchars($info['meta_value']);
                 break;
+            case 'logo':
+                $logo_path = htmlspecialchars($info['meta_value']);
+                break;
         }
     }
 } else {
     echo "Error fetching company info: " . $conn->error;
 }
+
+// Validate and create the full logo URL
+$full_logo_url = (!empty($logo_path) && file_exists(base_app . $logo_path))
+    ? base_url . $logo_path
+    : base_url . 'no-image-available.png';
 ?>
+
+
 
 
 <!DOCTYPE html>
@@ -66,46 +73,55 @@ if ($result) {
 </head>
 
 <body>
-<div class="purchase-order">
-    <header>
-        <div class="logo">
-            <h1><?php echo $company_address; ?></h1>
-        </div>
-        <div class="title">
-            <h2>PURCHASE ORDER</h2>
-        </div>
-    </header>
+    <div class="purchase-order">
+        <header>
+            <div class="logo">
+                <img src="<?php echo $full_logo_url; ?>"
+                    alt="Company Logo"
+                    class="brand-image"
+                    style="
+            border-radius: 50%; 
+            background-color: transparent; 
+            width: 6.5rem; 
+            height: 6.5rem; 
+            object-fit: cover; 
+            object-position: center center;">
+            </div>
 
-    <section class="po-details">
-        <!-- Add the "Purchase Order For Purchase Entries" text -->
-        <p style="text-align: center; font-size: 18px; text-transform: uppercase;"><strong>Purchase Order For Purchase Entries</strong></p>
-        <br>
-        <!-- Display the PO number dynamically with an extended underline -->
-        <p id="poNumberDisplay" style="text-align: left;">PO NO:
-            <span class="underline">
-                <?php
-                if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-                    // Get the filtered PO number and display it
-                    $po_number = isset($_POST['po_number']) ? strtoupper($_POST['po_number']) : '';
-                    echo htmlspecialchars($po_number);
-                } else {
-                    echo ''; // Default text when PO number is not set
-                }
-                ?>
-            </span>
-        </p>
-        <p style="text-align: left;">PO Date: <u>______________________</u></p>
-    </section>
+            <div class="title">
+                <h2>PURCHASE ORDER</h2>
+            </div>
+        </header>
+
+        <section class="po-details">
+            <!-- Add the "Purchase Order For Purchase Entries" text -->
+            <p style="text-align: center; font-size: 18px; text-transform: uppercase;"><strong>Purchase Order For Purchase Entries</strong></p>
+            <br>
+            <!-- Display the PO number dynamically with an extended underline -->
+            <p id="poNumberDisplay" style="text-align: left;">PO NO:
+                <span class="underline">
+                    <?php
+                    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+                        // Get the filtered PO number and display it
+                        $po_number = isset($_POST['po_number']) ? strtoupper($_POST['po_number']) : '';
+                        echo htmlspecialchars($po_number);
+                    } else {
+                        echo ''; // Default text when PO number is not set
+                    }
+                    ?>
+                </span>
+            </p>
+            <p style="text-align: left;">PO Date: <u>______________________</u></p>
+        </section>
 
         <section class="address-section">
             <div class="to">
                 <h3>To:</h3>
                 <p>Company Name: ___________________</p>
                 <p>Company Address: ___________________</p>
-                <p>City, ST, ZIP Code: ___________________</p>
+                <p>TIN Number: ___________________</p>
                 <p>Attn: ___________________</p>
-                <p>Phone: ________________</p>
-                <p>Fax: __________________</p>
+                <p>Contact Number: ________________</p>
                 <p>Email: ________________</p>
             </div>
         </section>
@@ -139,46 +155,85 @@ if ($result) {
         <tbody>
             <?php
             if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-                // Get the filtered PO number and PO date
+                // Get the filtered PO number
                 $po_number = isset($_POST['po_number']) ? strtoupper($_POST['po_number']) : '';
 
+                // Initialize subtotal variable
+                $subtotal = 0;
+
                 // Check if entries exist
-                if (isset($_POST['entries']) && is_array($_POST['entries'])) {
-                    echo "<table border='1' cellpadding='5' cellspacing='0'>";
-                    echo "<thead>";
-                    echo "<tr>";
-                    echo "<th>No.</th>"; // Added No. column
-                    echo "<th>Product Name</th>";
-                    echo "<th>Description</th>";
-                    echo "<th>Quantity</th>";
-                    echo "<th>Total Price</th>";
-                    echo "</tr>";
-                    echo "</thead>";
-                    echo "<tbody>";
+                if (isset($_POST['entries']) && !empty($_POST['entries'])) {
+                    // Decode the JSON-encoded entries
+                    $entries = json_decode($_POST['entries'], true); // JSON decode the entries
 
-                    // Initialize counter
-                    $counter = 1;
+                    // Ensure that $entries is an array before processing
+                    if (is_array($entries)) {
 
-                    foreach ($_POST['entries'] as $row) {
-                        // Extract relevant data
-                        $product_name = $row[2] ?? ''; // Product name is in index 2
-                        $details = isset($row[3]) ? explode("\n", $row[3]) : [];
-                        $description = $details[0] ?? ''; // First line is the description
-                        $quantity = isset($details[1]) ? (int)trim($details[1]) : 0; // Second line is quantity
-                        $total_price = isset($details[2]) ? trim($details[2]) : '₱0.00'; // Third line is total price
-
-                        // Display the data with the counter
+                        echo "<table border='1' cellpadding='5' cellspacing='0'>";
+                        echo "<thead>";
                         echo "<tr>";
-                        echo "<td>" . $counter++ . "</td>"; // Display and increment the counter
-                        echo "<td>" . htmlspecialchars($product_name) . "</td>";
-                        echo "<td>" . htmlspecialchars($description) . "</td>";
-                        echo "<td>" . htmlspecialchars($quantity) . "</td>";
-                        echo "<td>" . htmlspecialchars($total_price) . "</td>";
+                        echo "<th>No.</th>"; // Added No. column
+                        echo "<th>Product Name</th>";
+                        echo "<th>Description</th>";
+                        echo "<th>Quantity</th>";
+                        echo "<th>Purchase Price</th>"; // Updated Purchase Price column
+                        echo "<th>Total Price</th>"; // Updated Total Price column
                         echo "</tr>";
-                    }
+                        echo "</thead>";
+                        echo "<tbody>";
 
-                    echo "</tbody>";
-                    echo "</table>";
+                        // Initialize counter
+                        $counter = 1;
+
+                        // Loop through each entry and fetch details
+                        foreach ($entries as $row) {
+                            // Extract relevant data from each row
+                            $product_name = isset($row['product_name']) ? $row['product_name'] : ''; // Product name
+                            $description = isset($row['description']) ? $row['description'] : ''; // Description
+                            $quantity = isset($row['quantity']) ? (int)$row['quantity'] : 0; // Quantity
+                            $purchase_price = isset($row['purchase_price']) ? (float)$row['purchase_price'] : 0.00; // Purchase price
+
+                            // Calculate the total price for this product (purchase price * quantity)
+                            $total_price_numeric = $purchase_price * $quantity;
+
+                            // Add to the subtotal (use the calculated total price)
+                            $subtotal += $total_price_numeric;
+
+                            // Format the total price and purchase price as ₱ amount to display in the table
+                            $formatted_total_price = '₱' . number_format($total_price_numeric, 2);
+                            $formatted_purchase_price = '₱' . number_format($purchase_price, 2);
+
+                            // Format the quantity with commas for thousands separators
+                            $formatted_quantity = number_format($quantity);
+
+                            // Display the data with the counter
+                            echo "<tr>";
+                            echo "<td>" . $counter++ . "</td>"; // Display and increment the counter
+                            echo "<td>" . htmlspecialchars($product_name) . "</td>";
+                            echo "<td>" . htmlspecialchars($description) . "</td>";
+                            echo "<td>" . $formatted_quantity . "</td>"; // Display formatted quantity
+                            echo "<td>" . $formatted_purchase_price . "</td>"; // Display the purchase price
+                            echo "<td>" . $formatted_total_price . "</td>"; // Display the calculated total price in the table
+                            echo "</tr>";
+                        }
+
+                        echo "</tbody>";
+                        echo "</table>";
+
+                        // Calculate the Output VAT (12%)
+                        $vat = $subtotal * 0.12;
+
+                        // Calculate the total price (subtotal + VAT)
+                        $total = $subtotal + $vat;
+
+                        /* Display the calculated totals
+            echo "<h4>Subtotal: ₱" . number_format($subtotal, 2) . "</h4>";
+            echo "<h4>Output VAT (12%): ₱" . number_format($vat, 2) . "</h4>";
+            echo "<h4>Total: ₱" . number_format($total, 2) . "</h4>";
+            */
+                    } else {
+                        echo "<h4>Invalid entries format.</h4>";
+                    }
                 } else {
                     echo "<h4>No data found for the given entries.</h4>";
                 }
@@ -186,6 +241,8 @@ if ($result) {
                 echo "<h4>Invalid request method.</h4>";
             }
             ?>
+
+
 
         </tbody>
         </table>
@@ -200,24 +257,26 @@ if ($result) {
             <table>
                 <tr>
                     <td>Subtotal:</td>
-                    <td>__________________</td>
+                    <td>₱ <?php echo number_format($subtotal, 2); ?></td>
                 </tr>
                 <tr>
-                    <td>Output vat (tax) 12%:</td>
-                    <td>__________________</td>
+                    <td>Output VAT (12%):</td>
+                    <td>₱ <?php echo number_format($vat, 2); ?></td>
                 </tr>
-                <tr>
-                    <!--
-                    <td>Freight:</td>
-                    <td>__________________</td>
-                </tr>
-                -->
+                <!-- Uncomment the Freight row if needed -->
+                <!-- 
+        <tr>
+            <td>Freight:</td>
+            <td>__________________</td>
+        </tr>
+        -->
                 <tr>
                     <td>Total:</td>
-                    <td>__________________</td>
+                    <td>₱ <?php echo number_format($total, 2); ?></td>
                 </tr>
             </table>
         </section>
+
 
         <footer>
             <p><?php echo $company_address; ?></p>

@@ -71,7 +71,30 @@ if (!$sales) {
 </style>
 <div class="card card-outline card-primary">
     <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
-        <h3 class="card-title">Sales Entries</h3>
+        <!-- Title and Actions Dropdown -->
+        <div style="display: flex; align-items: center; gap: 15px;">
+            <h3 class="card-title">Sales Entries</h3>
+
+            <!-- Actions Dropdown -->
+            <?php if ($user_type == '3'): // Only display for user type 3 (manager) 
+            ?>
+            <div class="dropdown">
+                <button class="btn btn-primary btn-flat btn-sm dropdown-toggle" type="button" id="actionsDropdown" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                    <i class="fa fa-check-circle"></i> Actions
+                </button>
+                <div class="dropdown-menu" aria-labelledby="actionsDropdown">
+                    <button class="dropdown-item approve_data" type="button" data-status="1">
+                        <i class="fa fa-check" style="color: green;"></i> Approve Selected
+                    </button>
+                    <button class="dropdown-item deny_data" type="button" data-status="2">
+                        <i class="fa fa-times" style="color: red;"></i> Deny Selected
+                    </button>
+                </div>
+            </div>
+            <?php endif; 
+            ?>
+        </div>
+
         <div style="display: flex; align-items: center; gap: 15px; justify-content: center;">
             <form id="filterForm" class="form-inline" style="display: inline-block;">
                 <div class="input-group">
@@ -91,12 +114,15 @@ if (!$sales) {
             </button>
         </div>
     </div>
+
+
     <div class="card-body">
         <div class="container-fluid">
             <table class="table table-hover table-striped table-bordered" id="salesTable">
                 <colgroup>
+                    <col width="10%">
+                    <col width="14%">
                     <col width="15%">
-                    <col width="20%">
                     <col width="10%">
                     <col width="10%">
                     <col width="10%">
@@ -106,6 +132,9 @@ if (!$sales) {
                 </colgroup>
                 <thead>
                     <tr>
+                        <th>
+                            <input type="checkbox" id="selectAll"><a> Select All</a>
+                        </th>
                         <th>Purchase Date</th>
                         <th>Product</th>
                         <th>Quantity</th>
@@ -141,11 +170,15 @@ if (!$sales) {
                     if ($sales_query) {
                         while ($row = $sales_query->fetch_assoc()):
                             // Fetch product details
-                            $product_query = $conn->query("SELECT name FROM `products` WHERE id = '" . $conn->real_escape_string($row['product_id']) . "'");
+                            $product_query = $conn->query("SELECT name FROM `products` WHERE id = '" . $conn->real_escape_string($row['product_id']) . "' ");
                             $product = $product_query ? $product_query->fetch_assoc() : array('name' => 'Unknown');
                             $total_price = $row['quantity'] * $row['selling_price'];
                     ?>
                             <tr>
+                                <td>
+                                    <input type="checkbox" class="selectItem" data-id="<?php echo $row['sales_code']; ?>">
+                                    <input type="hidden" class="sales_code" value="<?php echo $row['sales_code']; ?>">
+                                </td>
                                 <td class="text-center"><?= htmlspecialchars(date("M d, Y", strtotime($row['purchase_date'])), ENT_QUOTES) ?></td>
                                 <td class=""><?= htmlspecialchars($product['name'], ENT_QUOTES) ?></td>
                                 <td class="text-right"><?= htmlspecialchars(format_num($row['quantity']), ENT_QUOTES) ?></td>
@@ -177,10 +210,10 @@ if (!$sales) {
                                         </a>
                                         <?php if ($_settings->userdata('type') == 3): ?>
                                             <div class="dropdown-divider"></div>
-                                            <a class="dropdown-item approve_data" href="javascript:void(0)" data-sales_code="<?= htmlspecialchars($row['sales_code'], ENT_QUOTES) ?>" data-status="1">
+                                            <a class="dropdown-item approve_data" href="javascript:void(0)" data-status="1">
                                                 <span class="fa fa-check text-success"></span> Approve
                                             </a>
-                                            <a class="dropdown-item deny_data" href="javascript:void(0)" data-sales_code="<?= htmlspecialchars($row['sales_code'], ENT_QUOTES) ?>" data-status="2">
+                                            <a class="dropdown-item deny_data" href="javascript:void(0)" data-status="2">
                                                 <span class="fa fa-times text-danger"></span> Deny
                                             </a>
                                         <?php endif; ?>
@@ -197,19 +230,14 @@ if (!$sales) {
     </div>
 </div>
 
+
 <script>
     $(document).ready(function() {
         // Open modal to create a new sales entry
         $('#create_new').click(function() {
             uni_modal("Add New Sales Entry", "sales/manage_sales.php", 'mid-large');
         });
-        /*
-        // Edit existing sales entry
-        $(document).on('click', '.edit_data', function() {
-            var id = $(this).data('id');
-            uni_modal("Edit", "sales/edit_sales.php?id=" + id, 'mid-large');
-        });
-        */
+
         // Confirm and delete the sales entry
         $(document).on('click', '.delete_data', function() {
             var id = $(this).data('id');
@@ -223,74 +251,72 @@ if (!$sales) {
                 targets: [5, 6] // Modify as needed based on the table columns
             }]
         });
-    });
-    // Handle the click event for the approve/deny options
-    $(document).on('click', '.approve_data, .deny_data', function() {
-        const sales_code = $(this).data('sales_code'); // Get the sales_code of the item
-        const status = $(this).data('status'); // Get the status (1: APPROVED, 2: DENIED)
 
-        // Map numeric status to text for confirmation message
-        let statusText = '';
-        if (status == 1) {
-            statusText = 'APPROVED';
-        } else if (status == 2) {
-            statusText = 'DENIED';
-        } else {
-            statusText = 'NO STATUS';
-        }
+        // Select All Checkbox Event
+        $('#selectAll').change(function() {
+            const isChecked = $(this).prop('checked');
+            $(".selectItem").prop('checked', isChecked);
+        });
 
-        // Confirm the action with the same style as delete entry
-        _conf(`Are you sure you want to change the status to "${statusText}" for sales code "${sales_code}"?`, "update_sales_status", [sales_code, status]);
-    });
-
-    // Check for success message in sessionStorage when the page is ready
-    $(document).ready(function() {
-        // Check if there is a success message in sessionStorage
-        var successMessage = sessionStorage.getItem('update_sales_status_message');
-        if (successMessage) {
-            // Display the success message using a custom toast or alert method
-            alert_toast(successMessage, 'success');
-
-            // Remove the message after displaying it to avoid showing it again on page reload
-            sessionStorage.removeItem('update_sales_status_message');
-
-            // Optional: Delay for 3 seconds before doing anything else if needed
-            setTimeout(function() {
-                // You can add additional logic here after the message duration ends
-            }, 3000); // 3-second duration
-        }
-    });
-
-    // Function to update the sales status
-    function update_sales_status(sales_code, status) {
-        $.ajax({
-            url: _base_url_ + "classes/Master.php?f=update_sales_status", // API endpoint to update the status
-            method: 'POST',
-            data: {
-                sales_code: sales_code, // Pass the sales_code as a string
-                status: status // Pass the status as a number (1 or 2)
-            },
-            dataType: 'json',
-            success: function(resp) {
-                if (resp.status === 'success') {
-                    // Store the success message in sessionStorage for later use
-                    sessionStorage.setItem('update_sales_status_message', resp.msg);
-
-                    // Reload the page immediately
-                    location.reload();
-                } else {
-                    // Show error message from the response
-                    alert_toast(resp.msg || "An error occurred while updating the status.", 'error');
-                }
-            },
-            error: function(xhr, status, error) {
-                console.error('AJAX Error:', xhr.responseText); // Log any AJAX errors for debugging
-                alert_toast("An error occurred while updating the status.", 'error'); // Show a generic error message
+        // Individual Checkbox Change Event
+        $(".selectItem").change(function() {
+            const isChecked = $(this).prop('checked');
+            if (!isChecked) {
+                $('#selectAll').prop('checked', false);
+            } else if ($(".selectItem:checked").length === $(".selectItem").length) {
+                $('#selectAll').prop('checked', true);
             }
         });
+
+        // Approve or Deny Action
+        $('.approve_data, .deny_data').click(function() {
+            const status = $(this).data('status');
+            const salesCodes = collectSelectedSalesCodes();
+
+            if (salesCodes.length === 0) {
+                alert_toast('No entries selected for approval/denial.', 'error');
+                return;
+            }
+
+            fetch(_base_url_ + "classes/Master.php?f=update_sales_status", {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        sales_codes: salesCodes,
+                        status: status
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        location.reload();
+                        window.addEventListener('load', function() {
+                            alert_toast(data.msg, 'success');
+                        }, 3000);
+                    } else {
+                        alert(data.msg);
+                    }
+                })
+                .catch(err => {
+                    console.error('Error:', err);
+                    alert('An error occurred while processing your request.');
+                });
+        });
+    });
+
+    // Function to Collect Selected Sales Codes
+    function collectSelectedSalesCodes() {
+        const selectedSalesCodes = [];
+        $(".selectItem:checked").each(function() {
+            const salesCode = $(this).data('id');
+            if (salesCode) {
+                selectedSalesCodes.push(salesCode);
+            }
+        });
+        return selectedSalesCodes;
     }
-
-
 
     // Function to delete sales entry
     function delete_sale(id) {
@@ -306,12 +332,10 @@ if (!$sales) {
                     if (resp.toast) {
                         eval(resp.toast); // Execute the toast message
                     }
-                    // Use session storage to temporarily hold the message
-                    sessionStorage.setItem('delete_message', resp.msg);
-                    // Delay for 2 seconds before reloading the page
+                    sessionStorage.setItem('delete_message', resp.msg); // Store the message in session
                     setTimeout(function() {
-                        location.reload(); // Reload the page to reflect changes
-                    }, ); // Adjust the time (in milliseconds) as needed
+                        location.reload(); // Reload after 2 seconds
+                    }, 2000); // Fixed timeout value
                 } else {
                     alert_toast(resp.msg || "An error occurred while deleting the entry.", 'error');
                 }
@@ -332,6 +356,7 @@ if (!$sales) {
         }
     });
 </script>
+
 
 <script>
     function submitPrintForm() {
@@ -367,110 +392,79 @@ if (!$sales) {
 
         // Select only visible rows in the table
         const rows = table.querySelectorAll('tbody tr:not([style="display: none;"])');
+        let productFound = false; // Flag to check if any approved product is found
+
         rows.forEach((row, rowIndex) => {
             const cells = row.querySelectorAll('td');
-            const productName = cells[1].textContent.trim(); // Product name (second column)
-            const quantity = cells[2].textContent.trim(); // Quantity (third column)
-            const price = cells[3].textContent.trim(); // Price (fourth column)
-            const total = cells[4].textContent.trim(); // Total (fifth column)
+            console.log('Processing row', rowIndex); // Log the row being processed
 
-            // Create hidden input fields for the required data (product, quantity, price, total)
-            const inputProductName = document.createElement('input');
-            inputProductName.type = 'hidden';
-            inputProductName.name = `entries[${rowIndex}][product]`;
-            inputProductName.value = productName;
-            form.appendChild(inputProductName);
+            // Assuming status is in the 6th column (index 5), PO number in 7th (index 6), and recorded by in 8th (index 7)
+            const statusCell = cells[6]; // Adjusted index for status column
+            const status = statusCell.textContent.trim().toUpperCase();
+            console.log('Status found: ', status); // Log the status value
 
-            const inputQuantity = document.createElement('input');
-            inputQuantity.type = 'hidden';
-            inputQuantity.name = `entries[${rowIndex}][quantity]`;
-            inputQuantity.value = quantity;
-            form.appendChild(inputQuantity);
 
-            const inputPrice = document.createElement('input');
-            inputPrice.type = 'hidden';
-            inputPrice.name = `entries[${rowIndex}][price]`;
-            inputPrice.value = price;
-            form.appendChild(inputPrice);
+            // Check for approved status
+            if (status == 'APPROVED') {
+                const productName = cells[2].textContent.trim(); // Product name in column 3 (index 2)
 
-            const inputTotal = document.createElement('input');
-            inputTotal.type = 'hidden';
-            inputTotal.name = `entries[${rowIndex}][total]`;
-            inputTotal.value = total;
-            form.appendChild(inputTotal);
+                // Handle quantity extraction and cleanup (removing commas or non-numeric characters)
+                const quantityStr = cells[3].textContent.trim().replace(/[^0-9.-]+/g, ""); // Clean quantity (remove commas or other symbols)
+                const quantity = parseFloat(quantityStr) || 0; // Ensure quantity is numeric (defaults to 0 if NaN)
+
+                const priceStr = cells[4].textContent.trim().replace(/[^0-9.-]+/g, ""); // Parse price as a number (remove currency symbol)
+                const price = parseFloat(priceStr);
+
+                const totalStr = cells[5].textContent.trim().replace(/[^0-9.-]+/g, ""); // Parse total as a number (remove currency symbol)
+                const total = parseFloat(totalStr);
+
+                console.log('Found APPROVED product:', cells[1].textContent.trim()); // Log when an APPROVED product is found
+
+                // Set productFound flag to true since we've found an approved product
+                productFound = true;
+
+                // Create hidden input fields for the required data (product, quantity, selling price, total)
+                const inputProductName = document.createElement('input');
+                inputProductName.type = 'hidden';
+                inputProductName.name = `entries[${rowIndex}][product]`;
+                inputProductName.value = productName;
+                form.appendChild(inputProductName);
+
+                const inputQuantity = document.createElement('input');
+                inputQuantity.type = 'hidden';
+                inputQuantity.name = `entries[${rowIndex}][quantity]`;
+                inputQuantity.value = quantity;
+                form.appendChild(inputQuantity);
+
+                const inputSellingPrice = document.createElement('input');
+                inputSellingPrice.type = 'hidden';
+                inputSellingPrice.name = `entries[${rowIndex}][price]`;
+                inputSellingPrice.value = price;
+                form.appendChild(inputSellingPrice);
+
+                const inputTotal = document.createElement('input');
+                inputTotal.type = 'hidden';
+                inputTotal.name = `entries[${rowIndex}][total]`;
+                inputTotal.value = total;
+                form.appendChild(inputTotal);
+            }
         });
 
-        // Append the form to the body and submit it
-        document.body.appendChild(form);
-        form.submit();
+        // If no approved product is found, log a message to the console
+        if (!productFound) {
+            alert_toast("No products with status 'APPROVED' found.", 'error');
+        }
+
+        // If an approved product is found, continue with the form submission
+        if (productFound) {
+            // Append the form to the body and submit it
+            document.body.appendChild(form);
+            form.submit();
+        }
     }
 
 
 
-    /*
-    function printPage() {
-        // Get the table and Action column index
-        const table = document.getElementById('salesTable');
-        const tableHeader = table.querySelector('thead tr');
-        const actionColumnIndex = Array.from(tableHeader.cells).findIndex(cell => cell.textContent.trim() === 'Action');
-
-        if (actionColumnIndex === -1) return; // If "Action" column is not found, exit
-
-        // Temporarily hide Action column and dropdowns
-        const rows = table.querySelectorAll('tr');
-        rows.forEach(row => {
-            const cells = row.children;
-            if (cells[actionColumnIndex]) {
-                cells[actionColumnIndex].style.display = 'none'; // Hide the Action column
-            }
-        });
-
-        // Clone the table to avoid modifying the original table
-        const tableClone = table.cloneNode(true);
-
-        // Restore visibility of the Action column in the original table
-        rows.forEach(row => {
-            const cells = row.children;
-            if (cells[actionColumnIndex]) {
-                cells[actionColumnIndex].style.display = ''; // Restore visibility
-            }
-        });
-
-        // Prepare print styles
-        const styles = `
-        <style>
-            body { font-family: Arial, sans-serif; margin: 20px; }
-            table { width: 100%; border-collapse: collapse; }
-            th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-            th { background-color: #f2f2f2; }
-            @media print {
-                body { margin: 0; padding: 0; }
-                table { margin-top: 20px; }
-            }
-        </style>
-    `;
-
-        // Create a new window for printing
-        const printWindow = window.open('', '', 'height=1200,width=800');
-        printWindow.document.write('<html><head><title>Print Table</title>' + styles + '</head><body>');
-        printWindow.document.write('<h3>Sales Entries</h3>'); // Add a title to the print view
-        printWindow.document.write(tableClone.outerHTML); // Add the cloned table to the print view
-        printWindow.document.write('</body></html>');
-        printWindow.document.close();
-
-        // Handle print dialog and automatically close the window after a delay
-        printWindow.focus();
-
-        // Attach `onafterprint` to close the print window after a delay
-        printWindow.onafterprint = function() {
-            setTimeout(() => {
-                printWindow.close(); // Close the print window after 2 seconds
-            }, 2000); // Delay of 2 seconds (2000 milliseconds)
-        };
-
-        printWindow.print(); // Trigger the print dialog
-    }
-    */
     //-----------------------------------------------------------------------------------------------------
 
     // Function to handle the filtering by PO Number
@@ -569,8 +563,12 @@ if (!$sales) {
                 // Create a new row for each entry
                 const row = document.createElement('tr');
 
-                // Populate row data
+                // Add checkbox to each row (for selecting the entry)
+                const checkboxCell = `<td class="text-center"><input type="checkbox" class="entry-checkbox" data-id="${entry.id}"></td>`;
+
+                // Populate row data, including the checkbox column
                 row.innerHTML = `
+                ${checkboxCell}
                 <td class="text-center">${formatDate(entry.purchase_date)}</td>
                 <td class=""><?= htmlspecialchars($product['name'], ENT_QUOTES) ?></td>
                 <td class="text-right">${entry.quantity}</td>
@@ -589,7 +587,7 @@ if (!$sales) {
                             <span class="fa fa-trash text-danger"></span> Delete
                         </a>
                         <!-- Include Approve and Deny options for managers -->
-                        ${entry.is_manager ? `
+                        ${entry.is_manager ? ` 
                             <div class="dropdown-divider"></div>
                             <a class="dropdown-item approve_data" href="javascript:void(0)" data-sales_code="${entry.sales_code}" data-status="1">
                                 <span class="fa fa-check text-success"></span> Approve
@@ -607,7 +605,7 @@ if (!$sales) {
             });
         } else {
             // If no filtered entries are found, show a message or leave the table empty
-            tbody.innerHTML = `<tr><td colspan="8" class="text-center">No entries found for the given PO number.</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="9" class="text-center">No entries found for the given PO number.</td></tr>`;
         }
     }
 </script>

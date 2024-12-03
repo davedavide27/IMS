@@ -2,12 +2,8 @@
 // Include the database connection (using your DBConnection class)
 require_once('./../../config.php');
 
-// Create an instance of the DBConnection class
-$db = new DBConnection;
-$conn = $db->conn; // MySQLi connection object
-
 // Fetch the company info from the system_info_inventory table
-$query = "SELECT * FROM system_info_inventory WHERE meta_field IN ('name', 'contact', 'email', 'company')"; // Modify query as needed
+$query = "SELECT * FROM system_info_inventory WHERE meta_field IN ('name', 'contact', 'email', 'company', 'logo')"; // Include 'logo'
 $result = $conn->query($query);
 
 // Initialize variables
@@ -16,6 +12,7 @@ $company_address = '';
 $city_zip = '';  // Note: Add logic to separate city, state, and zip if available in the meta_value
 $phone = '';
 $email = '';
+$logo_path = '';
 
 // Check if the query was successful
 if ($result) {
@@ -34,11 +31,19 @@ if ($result) {
             case 'company':
                 $company_address = htmlspecialchars($info['meta_value']);
                 break;
+            case 'logo':
+                $logo_path = htmlspecialchars($info['meta_value']);
+                break;
         }
     }
 } else {
     echo "Error fetching company info: " . $conn->error;
 }
+
+// Validate and create the full logo URL
+$full_logo_url = (!empty($logo_path) && file_exists(base_app . $logo_path))
+    ? base_url . $logo_path
+    : base_url . 'no-image-available.png';
 ?>
 
 
@@ -68,9 +73,19 @@ if ($result) {
 <body>
     <div class="purchase-order">
         <header>
-            <div class="logo">
-                <h1><?php echo $company_address; ?></h1>
+        <div class="logo">
+                <img src="<?php echo $full_logo_url; ?>"
+                    alt="Company Logo"
+                    class="brand-image"
+                    style="
+            border-radius: 50%; 
+            background-color: transparent; 
+            width: 6.5rem; 
+            height: 6.5rem; 
+            object-fit: cover; 
+            object-position: center center;">
             </div>
+
             <div class="title">
                 <h2>PURCHASE ORDER</h2>
             </div>
@@ -137,54 +152,67 @@ if ($result) {
                 </thead>
             -->
         <tbody>
-            <?php
-            if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-                // Get the filtered PO number
-                $po_number = isset($_POST['po_number']) ? strtoupper($_POST['po_number']) : '';
+        <?php
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    //echo '<pre>';
+   // print_r($_POST); // Inspect POST data
+    //echo '</pre>';
 
-                // Check if entries exist
-                if (isset($_POST['entries']) && is_array($_POST['entries'])) {
-                    echo "<table border='1' cellpadding='5' cellspacing='0'>";
-                    echo "<thead>";
-                    echo "<tr>";
-                    echo "<th>No.</th>"; // Added No. column
-                    echo "<th>Product Name</th>";
-                    echo "<th>Quantity</th>";
-                    echo "<th>Price</th>";
-                    echo "<th>Total</th>";
-                    echo "</tr>";
-                    echo "</thead>";
-                    echo "<tbody>";
+    $subtotal = 0;
 
-                    // Initialize counter
-                    $counter = 1;
+    if (isset($_POST['entries']) && is_array($_POST['entries'])) {
+        echo "<table border='1' cellpadding='5' cellspacing='0'>";
+        echo "<thead>";
+        echo "<tr>";
+        echo "<th>No.</th>";
+        echo "<th>Product Name</th>";
+        echo "<th>Quantity</th>";
+        echo "<th>Price</th>";
+        echo "<th>Total</th>";
+        echo "</tr>";
+        echo "</thead>";
+        echo "<tbody>";
 
-                    foreach ($_POST['entries'] as $row) {
-                        // Extract relevant data from the row
-                        $product_name = $row['product'] ?? ''; // Product name
-                        $quantity = $row['quantity'] ?? 0; // Quantity
-                        $price = $row['price'] ?? '₱0.00'; // Price
-                        $total = $row['total'] ?? '₱0.00'; // Total
+        $counter = 1;
 
-                        // Display the data with the counter
-                        echo "<tr>";
-                        echo "<td>" . $counter++ . "</td>"; // Display and increment the counter
-                        echo "<td>" . htmlspecialchars($product_name) . "</td>";
-                        echo "<td>" . htmlspecialchars($quantity) . "</td>";
-                        echo "<td>" . htmlspecialchars($price) . "</td>";
-                        echo "<td>" . htmlspecialchars($total) . "</td>";
-                        echo "</tr>";
-                    }
+        foreach ($_POST['entries'] as $row) {
+            $product_name = isset($row['product']) ? htmlspecialchars($row['product']) : '';
+            $quantity = isset($row['quantity']) ? (float)$row['quantity'] : 0;
+            $price = isset($row['price']) ? (float)$row['price'] : 0;
+            $total = $quantity * $price;
 
-                    echo "</tbody>";
-                    echo "</table>";
-                } else {
-                    echo "<h4>No data found for the given entries.</h4>";
-                }
-            } else {
-                echo "<h4>Invalid request method.</h4>";
-            }
-            ?>
+            $subtotal += $total;
+
+            // Format the quantity with commas
+            $formatted_quantity = number_format($quantity);
+
+            echo "<tr>";
+            echo "<td>" . $counter++ . "</td>";
+            echo "<td>" . $product_name . "</td>";
+            echo "<td>" . $formatted_quantity . "</td>"; // Display formatted quantity
+            echo "<td>₱" . number_format($price, 2) . "</td>";
+            echo "<td>₱" . number_format($total, 2) . "</td>";
+            echo "</tr>";
+        }
+
+        echo "</tbody>";
+        echo "</table>";
+
+        $vat = $subtotal * 0.12;
+        $grand_total = $subtotal + $vat;
+
+        //echo "<h3>Subtotal: ₱" . number_format($subtotal, 2) . "</h3>";
+        //echo "<h3>VAT (12%): ₱" . number_format($vat, 2) . "</h3>";
+        //echo "<h3>Grand Total: ₱" . number_format($grand_total, 2) . "</h3>";
+    } else {
+        echo "<h4>No data found for the given entries.</h4>";
+    }
+} else {
+    echo "<h4>Invalid request method.</h4>";
+}
+?>
+
+
 
         </tbody>
         </table>
@@ -196,27 +224,22 @@ if ($result) {
         </section>
 
         <section class="totals">
-            <table>
-                <tr>
-                    <td>Subtotal:</td>
-                    <td>__________________</td>
-                </tr>
-                <tr>
-                    <td>Output vat (tax) 12%:</td>
-                    <td>__________________</td>
-                </tr>
-                <tr>
-                    <!--
-                    <td>Freight:</td>
-                    <td>__________________</td>
-                </tr>
-                -->
-                <tr>
-                    <td>Total:</td>
-                    <td>__________________</td>
-                </tr>
-            </table>
-        </section>
+    <table>
+        <tr>
+            <td>Subtotal:</td>
+            <td>₱<?php echo number_format($subtotal, 2); ?></td>
+        </tr>
+        <tr>
+            <td>Output VAT (Tax) 12%:</td>
+            <td>₱<?php echo number_format($vat, 2); ?></td>
+        </tr>
+        <tr>
+            <td>Total:</td>
+            <td>₱<?php echo number_format($grand_total, 2); ?></td>
+        </tr>
+    </table>
+</section>
+
 
         <footer>
             <p><?php echo $company_address; ?></p>
