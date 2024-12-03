@@ -362,53 +362,53 @@ if (!$sales) {
 
 
 <script>
-    function submitPrintForm() {
-        const table = document.querySelector('#salesTable'); // Ensure this is the correct table ID or class
+function submitPrintForm() {
+    const table = document.querySelector('#salesTable'); // Ensure this is the correct table ID or class
 
-        if (!table) {
-            console.error('Table not found!');
-            return; // Exit the function if table is not found
-        }
+    if (!table) {
+        console.error('Table not found!');
+        return; // Exit the function if table is not found
+    }
 
-        const poNumber = document.getElementById('po_number_filter').value.trim().toUpperCase(); // Get PO number from input field
+    const poNumber = document.getElementById('po_number_filter').value.trim().toUpperCase(); // Get PO number from input field
 
-        // Set the PO number in the PO Details section
-        const poNumberDisplay = document.getElementById('poNumberDisplay');
-        if (poNumberDisplay) {
-            poNumberDisplay.textContent = `PO #: ${poNumber || '____________________'}`;
-        }
+    // Set the PO number in the PO Details section
+    const poNumberDisplay = document.getElementById('poNumberDisplay');
+    if (poNumberDisplay) {
+        poNumberDisplay.textContent = `PO #: ${poNumber || '____________________'}`;
+    }
 
-        // Create a new form element
-        const form = document.createElement('form');
-        form.method = 'POST';
-        form.action = window.location.origin + "/ajms/admin/sales/print_order.php?page=sales"; // Correct full path
+    // Create a new form element
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = window.location.origin + "/ajms/admin/sales/print_order.php?page=sales"; // Correct full path
 
-        // Add target="_blank" to open the form in a new tab
-        form.target = '_blank';
+    // Add target="_blank" to open the form in a new tab
+    form.target = '_blank';
 
-        // Add PO number to the form
-        const poNumberInput = document.createElement('input');
-        poNumberInput.type = 'hidden';
-        poNumberInput.name = 'po_number';
-        poNumberInput.value = poNumber;
-        form.appendChild(poNumberInput);
+    // Add PO number to the form
+    const poNumberInput = document.createElement('input');
+    poNumberInput.type = 'hidden';
+    poNumberInput.name = 'po_number';
+    poNumberInput.value = poNumber;
+    form.appendChild(poNumberInput);
 
-        // Select only visible rows in the table
-        const rows = table.querySelectorAll('tbody tr:not([style="display: none;"])');
-        let productFound = false; // Flag to check if any approved product is found
+    // Extract the purchase date (from the first row, adjust column index if needed)
+    let purchaseDate = '';
+    let productFound = false; // Flag to check if any approved product is found
+    const rows = table.querySelectorAll('tbody tr:not([style="display: none;"])'); // Select only visible rows
 
+    if (rows.length > 0) {
         rows.forEach((row, rowIndex) => {
             const cells = row.querySelectorAll('td');
             console.log('Processing row', rowIndex); // Log the row being processed
 
-            // Assuming status is in the 6th column (index 5), PO number in 7th (index 6), and recorded by in 8th (index 7)
             const statusCell = cells[6]; // Adjusted index for status column
-            const status = statusCell.textContent.trim().toUpperCase();
+            const status = statusCell ? statusCell.textContent.trim().toUpperCase() : '';
             console.log('Status found: ', status); // Log the status value
 
-
             // Check for approved status
-            if (status == 'APPROVED') {
+            if (status === 'APPROVED') {
                 const productName = cells[2].textContent.trim(); // Product name in column 3 (index 2)
 
                 // Handle quantity extraction and cleanup (removing commas or non-numeric characters)
@@ -421,10 +421,15 @@ if (!$sales) {
                 const totalStr = cells[5].textContent.trim().replace(/[^0-9.-]+/g, ""); // Parse total as a number (remove currency symbol)
                 const total = parseFloat(totalStr);
 
-                console.log('Found APPROVED product:', cells[1].textContent.trim()); // Log when an APPROVED product is found
+                console.log('Found APPROVED product:', productName); // Log when an APPROVED product is found
 
                 // Set productFound flag to true since we've found an approved product
                 productFound = true;
+
+                // Add PO date from the first approved row
+                if (purchaseDate === '') {
+                    purchaseDate = cells[1]?.textContent.trim(); // Assuming the purchase date is in the second column (index 1)
+                }
 
                 // Create hidden input fields for the required data (product, quantity, selling price, total)
                 const inputProductName = document.createElement('input');
@@ -452,20 +457,27 @@ if (!$sales) {
                 form.appendChild(inputTotal);
             }
         });
-
-        // If no approved product is found, log a message to the console
-        if (!productFound) {
-            alert_toast("No products with status 'APPROVED' found.", 'error');
-        }
-
-        // If an approved product is found, continue with the form submission
-        if (productFound) {
-            // Append the form to the body and submit it
-            document.body.appendChild(form);
-            form.submit();
-        }
     }
 
+    // If no approved product is found, log a message to the console
+    if (!productFound) {
+        alert_toast("No products with status 'APPROVED' found.", 'error');
+    }
+
+    // If an approved product is found, continue with the form submission
+    if (productFound) {
+        // Add purchase date to the form as po_date
+        const purchaseDateInput = document.createElement('input');
+        purchaseDateInput.type = 'hidden';
+        purchaseDateInput.name = 'po_date'; // Send the date as po_date
+        purchaseDateInput.value = purchaseDate;
+        form.appendChild(purchaseDateInput);
+
+        // Append the form to the body and submit it
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
 
 
     //-----------------------------------------------------------------------------------------------------

@@ -603,11 +603,12 @@ if ($inventory) {
         form.appendChild(poNumberInput);
 
         // Select only visible rows in the table
-        const rows = table.querySelectorAll('tbody tr:not([style="display: none;"])');
+        const visibleRows = table.querySelectorAll('tbody tr:not([style="display: none;"])');
+        let poDate = ''; // This will store the entry_date
         let entries = []; // Array to store entries for the form
         let productsToFetchPrice = []; // Array to store product names for which we need to fetch the purchase price
 
-        rows.forEach((row, rowIndex) => {
+        visibleRows.forEach((row, rowIndex) => {
             const cells = row.querySelectorAll('td');
 
             if (cells.length < 7) {
@@ -651,6 +652,12 @@ if ($inventory) {
 
                 // Add the product to the list of products to fetch purchase price
                 productsToFetchPrice.push(productName);
+
+                // Extract entry_date from the first row with approved status (assuming it's in the first column)
+                const entryDate = cells[1]?.textContent.trim() || "N/A"; // Adjust index based on actual column for entry_date
+                if (!poDate) {
+                    poDate = entryDate; // Only set the poDate once
+                }
             }
         });
 
@@ -658,6 +665,19 @@ if ($inventory) {
             alert_toast("No products with status 'APPROVED' found.", 'error');
             return; // Exit if no approved products are found
         }
+
+        // Set the PO date (entry_date) in the PO Details section
+        const poDateDisplay = document.getElementById('poDateDisplay');
+        if (poDateDisplay) {
+            poDateDisplay.textContent = `PO Date: ${poDate || '____________________'}`;
+        }
+
+        // Add PO date (entry_date) to the form
+        const poDateInput = document.createElement('input');
+        poDateInput.type = 'hidden';
+        poDateInput.name = 'po_date';
+        poDateInput.value = poDate;
+        form.appendChild(poDateInput);
 
         // Function to fetch purchase prices for all products
         function fetchPurchasePrices(products) {
@@ -721,6 +741,7 @@ if ($inventory) {
                 alert_toast("Error fetching purchase prices.", 'error');
             });
     }
+
 
 
 

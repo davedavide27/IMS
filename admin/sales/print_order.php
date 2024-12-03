@@ -92,25 +92,42 @@ $full_logo_url = (!empty($logo_path) && file_exists(base_app . $logo_path))
         </header>
 
         <section class="po-details">
-            <!-- Add the "Purchase Order For Sales" text -->
-            <p style="text-align: center; font-size: 18px; text-transform: uppercase;"><strong>Purchase Order For Sales</strong></p>
-            <br>
-            <!-- Display the PO number dynamically with an extended underline -->
-            <p id="poNumberDisplay" style="text-align: left;">PO NO:
-                <span class="underline">
-                    <?php
-                    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-                        // Get the filtered PO number and display it
-                        $po_number = isset($_POST['po_number']) ? strtoupper($_POST['po_number']) : '';
-                        echo htmlspecialchars($po_number);
-                    } else {
-                        echo ''; // Default text when PO number is not set
-                    }
-                    ?>
-                </span>
-            </p>
-            <p style="text-align: left;">PO Date: <u>______________________</u></p>
-        </section>
+    <!-- Add the "Purchase Order For Sales" text -->
+    <p style="text-align: center; font-size: 18px; text-transform: uppercase;">
+        <strong>Purchase Order For Sales</strong>
+    </p>
+    <br>
+    <!-- Display the PO number dynamically with an extended underline -->
+    <p id="poNumberDisplay" style="text-align: left;">PO NO:
+        <span class="underline">
+            <?php
+            if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+                // Get the filtered PO number and display it
+                $po_number = isset($_POST['po_number']) ? strtoupper($_POST['po_number']) : '';
+                echo htmlspecialchars($po_number);
+            } else {
+                echo ''; // Default text when PO number is not set
+            }
+            ?>
+        </span>
+    </p>
+
+    <!-- Display the PO date dynamically -->
+    <p id="poDateDisplay" style="text-align: left;">PO Date: 
+        <span class="underline">
+            <?php
+            if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+                // Get the filtered PO date and display it
+                $po_date = isset($_POST['po_date']) ? $_POST['po_date'] : '';
+                echo htmlspecialchars($po_date);
+            } else {
+                echo ''; // Default text when PO date is not set
+            }
+            ?>
+        </span>
+    </p>
+</section>
+
 
         <section class="address-section">
             <div class="to" style="display: flex; justify-content: space-between; width: 100%; position: relative;">
