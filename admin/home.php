@@ -24,7 +24,12 @@ if ($sales_stmt) {
 }
 
 // Fetch total purchases within date range
-$purchase_stmt = $conn->prepare("SELECT SUM(purchase_price * quantity) AS total_purchase FROM inventory_entries JOIN products ON inventory_entries.product_id = products.id WHERE entry_date BETWEEN ? AND ?");
+$purchase_stmt = $conn->prepare("
+    SELECT 
+        SUM(products.purchase_price * inventory_entries.quantity) AS total_purchase 
+    FROM inventory_entries 
+    JOIN products ON inventory_entries.product_id = products.id 
+    WHERE inventory_entries.entry_date BETWEEN ? AND ?");
 if ($purchase_stmt) {
     $purchase_stmt->bind_param("ss", $from, $to);
     $purchase_stmt->execute();
@@ -38,7 +43,36 @@ if ($purchase_stmt) {
 
 // Calculate profit based on the date range
 $profit = $total_sales - $total_purchase;
+
+// Fetch the beginning balance (Total amount on Dec 31 of the previous year)
+function getBeginningBalance($conn)
+{
+    $prev_year_end = date("Y-12-31", strtotime("-1 year"));
+    $stmt = $conn->prepare("
+        SELECT 
+            SUM(products.purchase_price * inventory_entries.quantity) AS beginning_balance 
+        FROM inventory_entries 
+        JOIN products ON inventory_entries.product_id = products.id 
+        WHERE inventory_entries.entry_date <= ?");
+    if ($stmt) {
+        $stmt->bind_param("s", $prev_year_end);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $row = $result->fetch_assoc();
+        $stmt->close();
+        return isset($row['beginning_balance']) ? $row['beginning_balance'] : 0;
+    }
+    return 0; // Default value in case of query failure
+}
+
+// Get beginning balance
+$beginning_balance = getBeginningBalance($conn);
+
+// Calculate ending inventory
+$ending_inventory = $beginning_balance + $total_purchase - $total_sales;
+
 ?>
+
 
 
 <!-- Date Range Filter Form -->
@@ -178,24 +212,19 @@ $profit = $total_sales - $total_purchase;
     </div>
 
 
-    <!-- Profit Box -->
+    <!-- Ending Inventory Box -->
     <div class="col-12 col-sm-12 col-md-6 col-lg-4">
         <div class="info-box bg-gradient-light shadow">
-            <span class="info-box-icon bg-gradient-danger elevation-1"><i class="fas fa-money-bill-wave"></i></span>
+            <span class="info-box-icon bg-gradient-success elevation-1"><i class="fas fa-box"></i></span>
             <div class="info-box-content">
-                <span class="info-box-text">Deficit <!-- Ending inventory amount In peso--></span>
+                <span class="info-box-text">Ending Inventory Amount (in peso)</span>
                 <span class="info-box-number text-right">
-                    <?php
-                    if ($profit < 0) {
-                        echo '₱ ' . format_num($profit);
-                    } else {
-                        echo "No Deficit";
-                    }
-                    ?>
+                    <?= '₱ ' . format_num($ending_inventory); ?>
                 </span>
             </div>
         </div>
     </div>
+
 </div>
 
 <hr class="border-border bg-primary">

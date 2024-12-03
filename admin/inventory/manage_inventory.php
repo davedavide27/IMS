@@ -96,37 +96,42 @@ $inventory_arr = json_encode($products);
                 <select id="product_id" name="product_id" class="form-control form-control-sm form-control-border select2" required>
                     <option value="" disabled selected></option>
                     <?php foreach ($products as $product) : ?>
-                        <option value="<?= $product['id'] ?>" <?= ($product['id'] == $product_id) ? 'selected' : '' ?>><?= $product['name'] ?></option>
+                        <?php if ($product['remarks'] == 1) : // Check if status is approved 
+                        ?>
+                            <option value="<?= $product['id'] ?>" <?= ($product['id'] == $product_id) ? 'selected' : '' ?>>
+                                <?= $product['name'] ?>
+                            </option>
+                        <?php endif; ?>
                     <?php endforeach; ?>
                 </select>
             </div>
-            <div class="form-group col-md-6">
-                <label for="quantity" class="control-label">Quantity</label>
-                <input type="number" id="quantity" name="quantity" class="form-control form-control-sm form-control-border" value="<?= $quantity ?>" required>
-            </div>
+        <div class="form-group col-md-6">
+            <label for="quantity" class="control-label">Quantity</label>
+            <input type="number" id="quantity" name="quantity" class="form-control form-control-sm form-control-border" value="<?= $quantity ?>" required>
         </div>
-        <div class="row">
-            <div class="form-group col-md-6">
-                <label for="purchase_price" class="control-label">Purchase Price</label>
-                <input type="number" step="any" id="purchase_price" name="purchase_price" class="form-control form-control-sm form-control-border" value="<?= isset($purchase_price) ? $purchase_price : '' ?>" readonly required>
-            </div>
-            <div class="form-group col-md-6">
-            <label for="gl_code" class="control-label">GL Code</label>
-                <select id="gl_code" name="gl_code" class="form-control form-control-sm form-control-border" required>
-                    <option value="" disabled selected>Select GL Code</option>
-                    <?php foreach ($gl_codes as $code): ?>
-                        <option value="<?= $code ?>" <?= isset($gl_code) && $gl_code == $code ? 'selected' : '' ?>><?= $code ?></option>
-                    <?php endforeach; ?>
-                </select>
-            </div>
-            <!--
+</div>
+<div class="row">
+    <div class="form-group col-md-6">
+        <label for="purchase_price" class="control-label">Purchase Price</label>
+        <input type="number" step="any" id="purchase_price" name="purchase_price" class="form-control form-control-sm form-control-border" value="<?= isset($purchase_price) ? $purchase_price : '' ?>" readonly required>
+    </div>
+    <div class="form-group col-md-6">
+        <label for="gl_code" class="control-label">GL Code</label>
+        <select id="gl_code" name="gl_code" class="form-control form-control-sm form-control-border" required>
+            <option value="" disabled selected>Select GL Code</option>
+            <?php foreach ($gl_codes as $code): ?>
+                <option value="<?= $code ?>" <?= isset($gl_code) && $gl_code == $code ? 'selected' : '' ?>><?= $code ?></option>
+            <?php endforeach; ?>
+        </select>
+    </div>
+    <!--
             <div class="form-group col-md-6">
                 <label for="selling_price" class="control-label">Selling Price</label>
                 <input type="number" step="any" id="selling_price" name="selling_price" class="form-control form-control-sm form-control-border" value="<?= isset($selling_price) ? $selling_price : '' ?>" readonly required>
             </div>
             -->
-        </div>
-    </form>
+</div>
+</form>
 </div>
 
 <script>
