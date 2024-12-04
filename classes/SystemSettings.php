@@ -15,7 +15,7 @@ class SystemSettings extends DBConnection{
 			$sql = "SELECT * FROM system_info_inventory";
 			$qry = $this->conn->query($sql);
 				while($row = $qry->fetch_assoc()){
-					$_SESSION['system_info_inventory'][$row['meta_field']] = $row['meta_value'];
+					$_SESSION['system_info'][$row['meta_field']] = $row['meta_value'];
 				}
 		// }
 	}
@@ -23,8 +23,8 @@ class SystemSettings extends DBConnection{
 		$sql = "SELECT * FROM system_info_inventory";
 		$qry = $this->conn->query($sql);
 			while($row = $qry->fetch_assoc()){
-				if(isset($_SESSION['system_info_inventory'][$row['meta_field']]))unset($_SESSION['system_info_inventory'][$row['meta_field']]);
-				$_SESSION['system_info_inventory'][$row['meta_field']] = $row['meta_value'];
+				if(isset($_SESSION['system_info'][$row['meta_field']]))unset($_SESSION['system_info'][$row['meta_field']]);
+				$_SESSION['system_info'][$row['meta_field']] = $row['meta_value'];
 			}
 		return true;
 	}
@@ -32,7 +32,7 @@ class SystemSettings extends DBConnection{
 		$data = "";
 		foreach ($_POST as $key => $value) {
 			if(!in_array($key,array("content")))
-			if(isset($_SESSION['system_info_inventory'][$key])){
+			if(isset($_SESSION['system_info'][$key])){
 				$value = str_replace("'", "&apos;", $value);
 				$qry = $this->conn->query("UPDATE system_info_inventory set meta_value = '{$value}' where meta_field = '{$key}' ");
 			}else{
@@ -74,9 +74,9 @@ class SystemSettings extends DBConnection{
 				}
 			}
 			if(isset($uploaded_img) && $uploaded_img == true){
-				if(isset($_SESSION['system_info_inventory']['logo'])){
+				if(isset($_SESSION['system_info']['logo'])){
 					$qry = $this->conn->query("UPDATE system_info_inventory set meta_value = '{$fname}' where meta_field = 'logo' ");
-					if(is_file(base_app.$_SESSION['system_info_inventory']['logo'])) unlink(base_app.$_SESSION['system_info']['logo']);
+					if(is_file(base_app.$_SESSION['system_info']['logo'])) unlink(base_app.$_SESSION['system_info']['logo']);
 				}else{
 					$qry = $this->conn->query("INSERT into system_info_inventory set meta_value = '{$fname}',meta_field = 'logo' ");
 				}
@@ -110,7 +110,7 @@ class SystemSettings extends DBConnection{
 				}
 			}
 			if(isset($uploaded_img) && $uploaded_img == true){
-				if(isset($_SESSION['system_info_inventory']['cover'])){
+				if(isset($_SESSION['system_info']['cover'])){
 					$qry = $this->conn->query("UPDATE system_info_inventory set meta_value = '{$fname}' where meta_field = 'cover' ");
 					if(is_file(base_app.$_SESSION['system_info_inventory']['cover'])) unlink(base_app.$_SESSION['system_info']['cover']);
 				}else{
@@ -173,8 +173,8 @@ class SystemSettings extends DBConnection{
 	}
 	function info($field=''){
 		if(!empty($field)){
-			if(isset($_SESSION['system_info_inventory'][$field]))
-				return $_SESSION['system_info_inventory'][$field];
+			if(isset($_SESSION['system_info'][$field]))
+				return $_SESSION['system_info'][$field];
 			else
 				return false;
 		}else{
@@ -183,7 +183,7 @@ class SystemSettings extends DBConnection{
 	}
 	function set_info($field='',$value=''){
 		if(!empty($field) && !empty($value)){
-			$_SESSION['system_info_inventory'][$field] = $value;
+			$_SESSION['system_info'][$field] = $value;
 		}
 	}
 }

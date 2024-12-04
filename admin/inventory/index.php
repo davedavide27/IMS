@@ -852,7 +852,7 @@ if ($inventory) {
         thead.innerHTML = `
         <tr>
             <th>
-                <input type="checkbox" id="selectAll">
+                <input type="checkbox" id="selectAll"> <a>Select All</a>
             </th>
             <th>Date</th>
             <th>Entry Code</th>

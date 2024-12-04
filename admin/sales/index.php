@@ -337,8 +337,8 @@ if (!$sales) {
                     }
                     sessionStorage.setItem('delete_message', resp.msg); // Store the message in session
                     setTimeout(function() {
-                        location.reload(); // Reload after 2 seconds
-                    }, 2000); // Fixed timeout value
+                        location.reload();
+                    });
                 } else {
                     alert_toast(resp.msg || "An error occurred while deleting the entry.", 'error');
                 }
@@ -524,7 +524,7 @@ function submitPrintForm() {
                             updateTableWithFilteredEntries(result.filteredEntries);
                         } else {
                             // If no entries are found, display a message
-                            alert_toast("No entries found for the given PO number.", 'info');
+                            alert_toast("No entries found for the given PO number.", 'warning');
                             updateTableWithFilteredEntries([]); // Clear the table
                         }
                     } else {
@@ -583,7 +583,7 @@ function submitPrintForm() {
 
                 // Populate row data, including the checkbox column
                 row.innerHTML = `
-                ${checkboxCell}
+                ${checkboxCell}<a>Select All</a>
                 <td class="text-center">${formatDate(entry.purchase_date)}</td>
                 <td class=""><?= htmlspecialchars($product['name'], ENT_QUOTES) ?></td>
                 <td class="text-right">${entry.quantity}</td>
