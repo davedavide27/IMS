@@ -26,7 +26,7 @@ if (isset($_GET['id'])) {
         <!-- Description -->
         <div class="form-group">
             <label for="description" class="control-label">Description</label>
-            <textarea rows="3" name="description" id="description" class="form-control form-control-sm rounded-0" required><?php echo isset($description) ? $description : '' ?></textarea>
+            <textarea rows="3" name="description" id="description" class="form-control form-control-sm rounded-0" required><?php echo isset($description) ? $description : '' ?></textarea required>
         </div>
 
         <!-- Purchase Price -->

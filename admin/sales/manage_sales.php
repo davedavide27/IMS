@@ -9,24 +9,12 @@ if (session_status() === PHP_SESSION_NONE) {
 // Check if user is logged in and retrieve user ID
 $user_id = isset($_SESSION['userdata']['id']) ? $_SESSION['userdata']['id'] : null;
 
-// Connect to the GL Code database
-$gl_conn = new mysqli("localhost", "root", "", "u399391754_dbcleaners");
-
-// Check connection
-if ($gl_conn->connect_error) {
-    die("Connection failed: " . $gl_conn->connect_error);
-}
-
-// Fetch GL Codes from the chart_of_accounts table
+// Fetch GL Codes from the chart_of_accounts table using the existing connection
 $gl_codes = [];
-$gl_query = $gl_conn->query("SELECT code_sub_accountName FROM chart_of_accounts");
+$gl_query = $conn->query("SELECT code_sub_accountName FROM chart_of_accounts");
 while ($row = $gl_query->fetch_assoc()) {
     $gl_codes[] = $row['code_sub_accountName'];
 }
-
-// Close GL Code database connection
-$gl_conn->close();
-
 
 // Fetch products and available stocks for dropdown
 $products = [];
@@ -53,6 +41,7 @@ $latest_code_query = $conn->query("SELECT MAX(sales_code) AS max_code FROM `sale
 $latest_code = $latest_code_query->fetch_assoc()['max_code'];
 $sales_code = $latest_code ? (intval($latest_code) + 1) : 1; // Auto-increment sales code
 ?>
+
 
 <div class="container-fluid">
     <form action="" id="sales-form">

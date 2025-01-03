@@ -11,23 +11,15 @@ $quantity = '';
 $purchase_price = '';
 $selling_price = '';
 
-// Connect to the GL Code database
-$gl_conn = new mysqli("localhost", "root", password: "", database: "u399391754_dbcleaners");
-
-// Check connection
-if ($gl_conn->connect_error) {
-    die("Connection failed: " . $gl_conn->connect_error);
-}
 
 // Fetch GL Codes from the chart_of_accounts table
 $gl_codes = [];
-$gl_query = $gl_conn->query("SELECT code_sub_accountName FROM chart_of_accounts");
-while ($row = $gl_query->fetch_assoc()) {
-    $gl_codes[] = $row['code_sub_accountName'];
+$gl_query = $conn->query("SELECT code_sub_accountName FROM chart_of_accounts");
+if ($gl_query->num_rows > 0) {
+    while ($row = $gl_query->fetch_assoc()) {
+        $gl_codes[] = $row['code_sub_accountName'];
+    }
 }
-
-// Close GL Code database connection
-$gl_conn->close();
 
 if (isset($_GET['entry_code'])) {
     $qry = $conn->query("SELECT * FROM `inventory_entries` WHERE entry_code = '{$_GET['entry_code']}'");
@@ -63,6 +55,7 @@ while ($row = $product_query->fetch_assoc()) {
 
 $inventory_arr = json_encode($products);
 ?>
+
 
 
 <div class="container-fluid">

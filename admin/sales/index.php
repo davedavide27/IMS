@@ -557,38 +557,45 @@ function submitPrintForm() {
         return date.toLocaleDateString('en-US', options);
     }
 
-    // Function to update the table with filtered entries
-    function updateTableWithFilteredEntries(entries) {
-        const tbody = document.querySelector('#salesTable tbody');
-        tbody.innerHTML = ''; // Clear current rows
-        // Define the status map for badges
-        const statusMap = {
-            0: '<span class="badge badge-dark">NO STATUS</span>',
-            1: '<span class="badge badge-success bg-gradient-success">APPROVED</span>',
-            2: '<span class="badge badge-danger bg-gradient-danger">DENIED</span>',
-        };
+// Function to format number with comma as thousand separators
+function formatCurrency(value) {
+    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'PHP' }).format(value);
+}
 
-        if (entries.length > 0) {
-            entries.forEach(entry => {
-                // Get the username from userArr, defaulting to "N/A" if not found
-                const username = (userArr && userArr[entry.user_id]) ? userArr[entry.user_id] : "N/A";
-                // Get the badge HTML based on status
-                const statusBadge = statusMap[entry.status] || statusMap[0];
+// Function to update the table with filtered entries
+function updateTableWithFilteredEntries(entries) {
+    const tbody = document.querySelector('#salesTable tbody');
+    tbody.innerHTML = ''; // Clear current rows
+    // Define the status map for badges
+    const statusMap = {
+        0: '<span class="badge badge-dark">NO STATUS</span>',
+        1: '<span class="badge badge-success bg-gradient-success">APPROVED</span>',
+        2: '<span class="badge badge-danger bg-gradient-danger">DENIED</span>',
+    };
 
-                // Create a new row for each entry
-                const row = document.createElement('tr');
+    if (entries.length > 0) {
+        entries.forEach(entry => {
+            // Get the username from userArr, defaulting to "N/A" if not found
+            const username = (userArr && userArr[entry.user_id]) ? userArr[entry.user_id] : "N/A";
+            // Get the badge HTML based on status
+            const statusBadge = statusMap[entry.status] || statusMap[0];
 
-                // Add checkbox to each row (for selecting the entry)
-                const checkboxCell = `<td class="text-center"><input type="checkbox" class="entry-checkbox" data-id="${entry.id}"></td>`;
+            // Create a new row for each entry
+            const row = document.createElement('tr');
 
-                // Populate row data, including the checkbox column
-                row.innerHTML = `
-                ${checkboxCell}<a>Select All</a>
+            // Add checkbox to each row (for selecting the entry)
+            const checkboxCell = `<td class="text-center"><input type="checkbox" class="entry-checkbox" data-id="${entry.id}"></td>`;
+
+            // Populate row data, including the checkbox column
+            row.innerHTML = `
+                ${checkboxCell}
                 <td class="text-center">${formatDate(entry.purchase_date)}</td>
                 <td class=""><?= htmlspecialchars($product['name'], ENT_QUOTES) ?></td>
                 <td class="text-right">${entry.quantity}</td>
-                <td class="text-right">₱${entry.selling_price}</td>
-                <td class="text-right">₱${entry.total_price}</td>
+                <!-- Format selling price with commas -->
+                <td class="text-right">${formatCurrency(entry.selling_price)}</td>
+                <!-- Format total price with commas -->
+                <td class="text-right">${formatCurrency(entry.total_price)}</td>
                 <td class="text-center">${statusBadge}</td>
                 <td>${entry.po_number || "N/A"}</td>
                 <td>${username}</td> <!-- Display the username here -->
@@ -615,12 +622,13 @@ function submitPrintForm() {
                 </td>
             `;
 
-                // Append the new row to the table
-                tbody.appendChild(row);
-            });
-        } else {
-            // If no filtered entries are found, show a message or leave the table empty
-            tbody.innerHTML = `<tr><td colspan="9" class="text-center">No entries found for the given PO number.</td></tr>`;
-        }
+            // Append the new row to the table
+            tbody.appendChild(row);
+        });
+    } else {
+        // If no filtered entries are found, show a message or leave the table empty
+        tbody.innerHTML = `<tr><td colspan="9" class="text-center">No entries found for the given PO number.</td></tr>`;
     }
+}
+
 </script>

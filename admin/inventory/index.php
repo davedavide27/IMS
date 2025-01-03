@@ -443,7 +443,6 @@ if ($inventory) {
             }
         });
 
-        // Approve or Deny Action
         $('.approve_data, .deny_data').click(function() {
             const status = $(this).data('status');
             const selectedEntries = collectSelectedEntries();
@@ -465,6 +464,7 @@ if ($inventory) {
                 })
                 .then(response => response.json())
                 .then(data => {
+                    console.log("Response Data:", data); // Add this line to log the response
                     if (data.status === 'success') {
                         location.reload();
                         window.addEventListener('load', function() {
@@ -479,6 +479,7 @@ if ($inventory) {
                     alert('An error occurred while processing your request.');
                 });
         });
+
 
         // Function to Collect Selected Entry IDs (Only visible checkboxes)
         function collectSelectedEntries() {

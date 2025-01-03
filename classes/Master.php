@@ -216,10 +216,10 @@ class Master extends DBConnection
 
 
 
-	public function get_inventory_entry($entry_code): array
+	public function get_inventory_entry($entry_code)
 	{
 		// Initialize response
-		$resp = ['status' => 'failed', 'message' => 'An unexpected error occurred.', 'data' => null];
+		$resp = array('status' => 'failed', 'message' => 'An unexpected error occurred.', 'data' => null);
 
 		// Check if entry_code is provided
 		if (empty($entry_code)) {
@@ -228,23 +228,23 @@ class Master extends DBConnection
 		}
 
 		// Sanitize entry code
-		$entry_code = $this->conn->real_escape_string($entry_code);
+		$entry_code = mysqli_real_escape_string($this->conn, $entry_code);
 
 		// Updated SQL query to fetch product details, including product name
 		$sql = "
-    SELECT ie.*, ii.product_id, ii.quantity, ii.price, pi.name AS product_name 
-    FROM `inventory_entries` ie
-    LEFT JOIN `inventory_items` ii ON ie.id = ii.inventory_id 
-    LEFT JOIN `products` pi ON ii.product_id = pi.id 
-    WHERE ie.`entry_code` = '$entry_code'
-";
+			SELECT ie.*, ii.product_id, ii.quantity, ii.price, pi.name AS product_name 
+			FROM `inventory_entries` ie
+			LEFT JOIN `inventory_items` ii ON ie.id = ii.inventory_id 
+			LEFT JOIN `products` pi ON ii.product_id = pi.id 
+			WHERE ie.`entry_code` = '$entry_code'
+		";
 
-		$result = $this->conn->query($sql);
+		$result = mysqli_query($this->conn, $sql);
 
-		if ($result && $result->num_rows > 0) {
+		if ($result && mysqli_num_rows($result) > 0) {
 			$resp['status'] = 'success';
 			$resp['message'] = "Inventory entry retrieved successfully.";
-			$resp['data'] = $result->fetch_assoc(); // Fetch entry details, including product info
+			$resp['data'] = mysqli_fetch_assoc($result); // Fetch entry details, including product info
 		} else {
 			$resp['message'] = "Inventory entry not found.";
 		}
@@ -254,21 +254,21 @@ class Master extends DBConnection
 
 	public function edit_entry()
 	{
-		// Check if session is already started
-		if (session_status() === PHP_SESSION_NONE) {
+		// Start session if not already started
+		if (session_id() == '') {
 			session_start(); // Start session only if it's not already active
 		}
 
 		// Initialize response
-		$resp = ['status' => 'failed', 'msg' => 'An unexpected error occurred.'];
+		$resp = array('status' => 'failed', 'msg' => 'An unexpected error occurred.');
 
 		// Get input data
-		$entry_date = isset($_POST['entry_date']) ? $this->conn->real_escape_string($_POST['entry_date']) : null;
-		$description = isset($_POST['description']) ? $this->conn->real_escape_string($_POST['description']) : null;
-		$product_id = isset($_POST['product_id']) ? $this->conn->real_escape_string($_POST['product_id']) : null;
-		$quantity = isset($_POST['quantity']) ? (float)$this->conn->real_escape_string($_POST['quantity']) : null;
-		$gl_code = isset($_POST['gl_code']) ? $this->conn->real_escape_string($_POST['gl_code']) : null;
-		$remarks = isset($_POST['remarks']) ? $this->conn->real_escape_string($_POST['remarks']) : null;
+		$entry_date = isset($_POST['entry_date']) ? mysqli_real_escape_string($this->conn, $_POST['entry_date']) : null;
+		$description = isset($_POST['description']) ? mysqli_real_escape_string($this->conn, $_POST['description']) : null;
+		$product_id = isset($_POST['product_id']) ? mysqli_real_escape_string($this->conn, $_POST['product_id']) : null;
+		$quantity = isset($_POST['quantity']) ? (float) mysqli_real_escape_string($this->conn, $_POST['quantity']) : null;
+		$gl_code = isset($_POST['gl_code']) ? mysqli_real_escape_string($this->conn, $_POST['gl_code']) : null;
+		$remarks = isset($_POST['remarks']) ? mysqli_real_escape_string($this->conn, $_POST['remarks']) : null;
 
 		// Ensure all required fields are provided
 		if (empty($entry_date) || empty($description) || empty($product_id) || is_null($quantity)) {
@@ -276,14 +276,14 @@ class Master extends DBConnection
 			return json_encode($resp);
 		}
 
-		// Use the entry code from the POST request (it will be passed from the frontend)
-		$entry_code = isset($_POST['entry_code']) ? $this->conn->real_escape_string($_POST['entry_code']) : null;
+		// Use the entry code from the POST request
+		$entry_code = isset($_POST['entry_code']) ? mysqli_real_escape_string($this->conn, $_POST['entry_code']) : null;
 
 		// Fetch the original quantity of the entry before updating
-		$qry = $this->conn->query("SELECT quantity FROM `inventory_entries` WHERE `entry_code` = '{$entry_code}' LIMIT 1");
-		if ($qry->num_rows > 0) {
-			$old_entry = $qry->fetch_assoc();
-			$old_quantity = (float)$old_entry['quantity'];
+		$qry = mysqli_query($this->conn, "SELECT quantity FROM `inventory_entries` WHERE `entry_code` = '{$entry_code}' LIMIT 1");
+		if (mysqli_num_rows($qry) > 0) {
+			$old_entry = mysqli_fetch_assoc($qry);
+			$old_quantity = (float) $old_entry['quantity'];
 		} else {
 			$resp['msg'] = "Entry not found.";
 			return json_encode($resp);
@@ -293,46 +293,32 @@ class Master extends DBConnection
 		$stock_difference = $quantity - $old_quantity;
 
 		// Update the available stock in the `stocks` table
-		// Assuming `stocks` table contains `available_stocks` and is linked by `product_id`
-		$update_stock_stmt = $this->conn->prepare("UPDATE `stocks` SET available_stocks = available_stocks + ? WHERE `product_id` = ?");
-		if (!$update_stock_stmt) {
-			$resp['msg'] = "Stock update prepare statement failed: " . $this->conn->error;
-			return json_encode($resp);
-		}
+		$update_stock_sql = "UPDATE `stocks` SET available_stocks = available_stocks + {$stock_difference} WHERE `product_id` = '{$product_id}'";
+		$stock_update_success = mysqli_query($this->conn, $update_stock_sql);
 
-		// Bind parameters to the stock update statement
-		$update_stock_stmt->bind_param("di", $stock_difference, $product_id); // d for double (quantity), i for int (product_id)
-
-		// Execute stock update
-		$stock_update_success = $update_stock_stmt->execute();
 		if (!$stock_update_success) {
-			$resp['msg'] = "Stock update execution failed: " . $update_stock_stmt->error;
+			$resp['msg'] = "Stock update failed: " . mysqli_error($this->conn);
 			return json_encode($resp);
 		}
 
 		// Prepare SQL to update `inventory_entries` table
-		$update_entry_stmt = $this->conn->prepare("UPDATE `inventory_entries` SET 
-			`entry_date` = ?, 
-			`description` = ?, 
-			`remarks` = ?,
-			`product_id` = ?, 
-			`quantity` = ?, 
-			`gl_code` = ?,
-			`date_updated` = CURRENT_TIMESTAMP 
-			WHERE `entry_code` = ?");
-
-		if (!$update_entry_stmt) {
-			$resp['msg'] = "Database prepare statement failed: " . $this->conn->error;
-			return json_encode($resp);
-		}
-
-		// Bind parameters to the prepared statement
-		$update_entry_stmt->bind_param("sssissi", $entry_date, $description, $remarks, $product_id, $quantity, $gl_code, $entry_code);
+		$update_entry_sql = "
+			UPDATE `inventory_entries` SET 
+				`entry_date` = '{$entry_date}', 
+				`description` = '{$description}', 
+				`remarks` = '{$remarks}',
+				`product_id` = '{$product_id}', 
+				`quantity` = '{$quantity}', 
+				`gl_code` = '{$gl_code}',
+				`date_updated` = CURRENT_TIMESTAMP 
+			WHERE `entry_code` = '{$entry_code}'
+		";
 
 		// Execute the update for `inventory_entries`
-		$update_entry_success = $update_entry_stmt->execute();
+		$update_entry_success = mysqli_query($this->conn, $update_entry_sql);
+
 		if (!$update_entry_success) {
-			$resp['msg'] = "Update execution failed: " . $update_entry_stmt->error;
+			$resp['msg'] = "Update execution failed: " . mysqli_error($this->conn);
 			return json_encode($resp);
 		}
 
@@ -341,6 +327,7 @@ class Master extends DBConnection
 		$resp['msg'] = 'Entry updated successfully and stock adjusted.';
 		return json_encode($resp);
 	}
+
 
 
 
@@ -746,80 +733,84 @@ class Master extends DBConnection
 		if (session_status() === PHP_SESSION_NONE) {
 			session_start(); // Start session if not already active
 		}
-
+	
 		header('Content-Type: application/json');
-
-		$resp = ['status' => 'failed', 'msg' => 'An unexpected error occurred.'];
-
+	
+		$resp = array('status' => 'failed', 'msg' => 'An unexpected error occurred.');
+	
 		// Decode JSON input
 		$input_data = json_decode(file_get_contents('php://input'), true);
-
-		$entry_codes = $input_data['entry_codes'] ?? null; // Array of entry codes
-		$status = $input_data['status'] ?? null;
-
+	
 		// Validate input data
+		$entry_codes = isset($input_data['entry_codes']) ? $input_data['entry_codes'] : null; // Array of entry codes
+		$status = isset($input_data['status']) ? $input_data['status'] : null;
+	
 		if (is_null($entry_codes) || !is_array($entry_codes) || empty($entry_codes)) {
 			$resp['msg'] = "Invalid request. Missing or invalid entry codes.";
 			echo json_encode($resp);
 			return;
 		}
-
-		if (is_null($status) || !in_array($status, [0, 1, 2])) {
+	
+		if (is_null($status) || !in_array($status, array(0, 1, 2))) {
 			$resp['msg'] = "Invalid status value. Allowed values are 0 (NO STATUS), 1 (APPROVED), or 2 (DENIED).";
 			echo json_encode($resp);
 			return;
 		}
-
+	
 		$status = (int)$status;
-
-		// Sanitize and cast entry codes to integers
-		$sanitized_entry_codes = array_map('intval', $entry_codes);
-
-		// Ensure there's at least one valid entry code
-		if (count($sanitized_entry_codes) === 0) {
+	
+		// Sanitize entry codes
+		$sanitized_entry_codes = array();
+		foreach ($entry_codes as $code) {
+			$sanitized_entry_codes[] = (int)$code;
+		}
+	
+		if (empty($sanitized_entry_codes)) {
 			$resp['msg'] = "No valid entry codes provided.";
 			echo json_encode($resp);
 			return;
 		}
-
-		// Build the placeholders for the IN clause based on the entry codes
+	
+		// Build placeholders for SQL IN clause
 		$placeholders = implode(',', array_fill(0, count($sanitized_entry_codes), '?'));
-
+	
 		// Check current statuses of selected entries
 		$check_sql = "SELECT `entry_code`, `status` FROM `inventory_entries` WHERE `entry_code` IN ($placeholders)";
 		$stmt = $this->conn->prepare($check_sql);
-
+	
 		if (!$stmt) {
 			$resp['msg'] = "Failed to prepare the query for status check.";
 			$resp['error'] = $this->conn->error;
 			echo json_encode($resp);
 			return;
 		}
-
-		// Bind parameters as integers for entry codes
-		$stmt->bind_param(str_repeat('i', count($sanitized_entry_codes)), ...$sanitized_entry_codes);
+	
+		// Bind the parameters
+		$types = str_repeat('i', count($sanitized_entry_codes)); // 'i' for integers
+		$stmt->bind_param($types, ...$sanitized_entry_codes); // Use spread operator for PHP 5.6+ or manually bind
+	
 		$stmt->execute();
 		$check_result = $stmt->get_result();
-
+	
 		if (!$check_result || $check_result->num_rows === 0) {
 			$resp['msg'] = "No inventory entries found with the provided entry codes.";
 			echo json_encode($resp);
 			return;
 		}
-
+	
 		// Determine entries already in the desired status
-		$existing_entries = [];
+		$existing_entries = array();
 		while ($row = $check_result->fetch_assoc()) {
 			if ((int)$row['status'] === $status) {
 				$existing_entries[] = $row['entry_code'];
 			}
 		}
-
+	
 		$stmt->close();
-
+	
 		// Filter out entries already updated
 		$entry_codes_to_update = array_diff($sanitized_entry_codes, $existing_entries);
-
+	
 		if (empty($entry_codes_to_update)) {
 			$statusText = $status === 1 ? 'APPROVED' : ($status === 2 ? 'DENIED' : 'NO STATUS');
 			$resp['msg'] = "All selected entries are already marked as '{$statusText}'.";
@@ -827,25 +818,26 @@ class Master extends DBConnection
 			echo json_encode($resp);
 			return;
 		}
-
+	
 		// Update statuses for remaining entries
 		$update_placeholders = implode(',', array_fill(0, count($entry_codes_to_update), '?'));
 		$update_sql = "UPDATE `inventory_entries` SET `status` = ? WHERE `entry_code` IN ($update_placeholders)";
 		$stmt = $this->conn->prepare($update_sql);
-
+	
 		if (!$stmt) {
 			$resp['msg'] = "Failed to prepare the update query.";
 			$resp['error'] = $this->conn->error;
 			echo json_encode($resp);
 			return;
 		}
-
-		// Prepare parameters for the update query (status followed by entry codes)
-		$params = array_merge([$status], $entry_codes_to_update);
-
-		// Bind the status (as integer) and the entry codes (as integers)
-		$stmt->bind_param(str_repeat('i', 1) . str_repeat('i', count($entry_codes_to_update)), ...$params);
-
+	
+		// Prepare parameters for the update query
+		$params = array_merge(array($status), $entry_codes_to_update);
+		$types = str_repeat('i', count($params)); // 'i' for integers
+	
+		// Bind parameters manually
+		$stmt->bind_param($types, ...$params);
+	
 		if ($stmt->execute()) {
 			if ($stmt->affected_rows > 0) {
 				$statusText = $status === 1 ? 'APPROVED' : ($status === 2 ? 'DENIED' : 'NO STATUS');
@@ -858,51 +850,53 @@ class Master extends DBConnection
 			$resp['msg'] = "Failed to update entry statuses.";
 			$resp['error'] = $this->conn->error;
 		}
-
+	
 		$stmt->close();
-
 		echo json_encode($resp);
-		error_log("Check SQL: " . $check_sql);
-		error_log("Update SQL: " . $update_sql);
 	}
+	
 
 
 
 	// Function to filter sales entries by PO number
 	public function filter_sales_by_po_number()
 	{
-		$resp = ['status' => 'failed', 'msg' => 'An unexpected error occurred.'];
+		// Initialize response array
+		$resp = array('status' => 'failed', 'msg' => 'An unexpected error occurred.');
 		$po_number = isset($_POST['po_number']) ? $_POST['po_number'] : null;
 
 		// Validate PO number input
 		if (is_null($po_number) || empty($po_number)) {
 			$resp['msg'] = "Invalid request. PO number is missing or empty.";
-			return json_encode($resp);
+			echo json_encode($resp);
+			return;
 		}
 
 		// Escape PO number to prevent SQL injection
 		$po_number = $this->conn->real_escape_string($po_number);
 
 		// Prepare SQL query to filter sales records by PO number
-		$sql = "SELECT * FROM `sales` WHERE `po_number` LIKE '%$po_number%'";
+		$sql = "SELECT * FROM `sales` WHERE `po_number` LIKE '%" . $po_number . "%'";
 		$result = $this->conn->query($sql);
 
 		if (!$result) {
 			// Query failed
 			$resp['msg'] = "Error executing query: " . $this->conn->error;
-			return json_encode($resp);
+			echo json_encode($resp);
+			return;
 		}
-		// Process query results
-		$status_map = [
+
+		// Status mapping for better readability
+		$status_map = array(
 			0 => 'NO STATUS',
 			1 => 'APPROVED',
 			2 => 'DENIED'
-		]; // Status mapping for better readability
+		);
 
 		// Fetch the filtered records
-		$entries = [];
+		$entries = array();
 		while ($row = $result->fetch_assoc()) {
-			$row['status_label'] = $status_map[$row['status']] ?? 'UNKNOWN STATUS';
+			$row['status_label'] = isset($status_map[$row['status']]) ? $status_map[$row['status']] : 'UNKNOWN STATUS';
 			$entries[] = $row; // Add each entry to the array
 		}
 
@@ -910,64 +904,65 @@ class Master extends DBConnection
 		if (count($entries) > 0) {
 			$resp['status'] = 'success';
 			$resp['filteredEntries'] = $entries;
-			$resp['msg'] = "Entries successfully retrieved."; // Provide a success message
+			$resp['msg'] = "Entries successfully retrieved.";
 		} else {
 			$resp['status'] = 'success'; // Even though no records were found, mark as success
-			$resp['filteredEntries'] = [];
-			$resp['msg'] = "No sales entries found for the PO number '{$po_number}'.";
+			$resp['filteredEntries'] = array();
+			$resp['msg'] = "No sales entries found for the PO number '" . $po_number . "'.";
 		}
 
-		return json_encode($resp);
+		echo json_encode($resp);
 	}
 
-	// Function to fetch all sales entries
+
 	public function fetch_all_sales($user_type, $user_id)
 	{
 		// Initialize where condition based on user type
 		$swhere = "";
 		if ($user_type != 1 && $user_type != 3) { // For non-admin and non-manager users
-			$swhere = " WHERE user_id = '{$user_id}' "; // Filter by the logged-in user ID
+			$swhere = " WHERE user_id = '" . $this->conn->real_escape_string($user_id) . "' "; // Filter by the logged-in user ID
 		}
 
 		// SQL query to fetch sales data with optional filters
 		$query = "SELECT s.id, s.purchase_date, s.product_id, s.quantity, s.sales_code, s.selling_price, s.user_id, s.status, s.po_number 
-              FROM `sales` s {$swhere} ORDER BY date(s.purchase_date) ASC";
+				  FROM `sales` s " . $swhere . " ORDER BY DATE(s.purchase_date) ASC";
 
 		// Execute query
 		$result = $this->conn->query($query);
 
 		// Initialize response array
-		$resp = ['status' => 'failed', 'msg' => 'No sales data found.', 'allSales' => []];
+		$resp = array('status' => 'failed', 'msg' => 'No sales data found.', 'allSales' => array());
 
 		// Check if there are results
-		if ($result->num_rows > 0) {
-			$sales_data = [];
+		if ($result && $result->num_rows > 0) {
+			$sales_data = array();
 			while ($row = $result->fetch_assoc()) {
 				// Fetch product details
-				$product = $this->conn->query("SELECT name FROM products WHERE id = '{$row['product_id']}'")->fetch_assoc();
+				$product_query = $this->conn->query("SELECT name FROM products WHERE id = '" . $this->conn->real_escape_string($row['product_id']) . "'");
+				$product = $product_query ? $product_query->fetch_assoc() : array('name' => 'Unknown Product');
 				$total_price = $row['quantity'] * $row['selling_price']; // Total price calculation
 
 				// Map the status values to human-readable statuses
-				$status_map = [
+				$status_map = array(
 					0 => 'NO STATUS',
 					1 => 'APPROVED',
 					2 => 'DENIED'
-				];
+				);
 				$status = isset($row['status']) ? $row['status'] : 0;
 
 				// Add formatted sales data to the result array
-				$sales_data[] = [
+				$sales_data[] = array(
 					'purchase_date' => date("M d, Y", strtotime($row['purchase_date'])),
 					'product_name' => htmlspecialchars($product['name'], ENT_QUOTES),
 					'quantity' => number_format($row['quantity']),
 					'selling_price' => "₱" . number_format($row['selling_price'], 2),
 					'total_price' => "₱" . number_format($total_price, 2),
-					'status' => $status_map[$status] ?? 'NO STATUS',
+					'status' => isset($status_map[$status]) ? $status_map[$status] : 'NO STATUS',
 					'po_number' => !empty($row['po_number']) ? htmlspecialchars($row['po_number']) : 'N/A',
 					'user_id' => $row['user_id'],
 					'status_code' => $status,
 					'sales_code' => $row['sales_code']
-				];
+				);
 			}
 
 			// Return success response with all sales data
@@ -981,7 +976,8 @@ class Master extends DBConnection
 
 	public function filter_inventory_by_po_number()
 	{
-		$resp = ['status' => 'failed', 'msg' => 'An unexpected error occurred.'];
+		// Initialize response array
+		$resp = array('status' => 'failed', 'msg' => 'An unexpected error occurred.');
 		$po_number = isset($_POST['po_number']) ? $_POST['po_number'] : null;
 
 		// Validate PO number input
@@ -1015,7 +1011,7 @@ class Master extends DBConnection
 		LEFT JOIN 
 			`users_inventory` u ON i.user_id = u.id
 		WHERE 
-			i.remarks LIKE '%$po_number%'
+			i.remarks LIKE '%" . $po_number . "%'
 		";
 
 		// Execute the query and fetch the results
@@ -1028,17 +1024,16 @@ class Master extends DBConnection
 		}
 
 		// Process query results
-		$entries = [];
-		$status_map = [
+		$entries = array();
+		$status_map = array(
 			0 => 'NO STATUS',
 			1 => 'APPROVED',
 			2 => 'DENIED'
-		]; // Status mapping for better readability
+		); // Status mapping for better readability
 
 		while ($row = $result->fetch_assoc()) {
 			// Map status to a readable format
-			$row['status_label'] = $status_map[$row['status']] ?? 'UNKNOWN STATUS';
-			// No need to manually add user_type since it's already fetched as user_inventory_type
+			$row['status_label'] = isset($status_map[$row['status']]) ? $status_map[$row['status']] : 'UNKNOWN STATUS';
 			$entries[] = $row; // Add entry to results array
 		}
 
@@ -1049,13 +1044,14 @@ class Master extends DBConnection
 			$resp['msg'] = "Entries successfully retrieved."; // Success message
 		} else {
 			$resp['status'] = 'success'; // Mark as success even if no entries are found
-			$resp['filteredEntries'] = [];
-			$resp['msg'] = "No inventory entries found for the PO number '{$po_number}'.";
+			$resp['filteredEntries'] = array();
+			$resp['msg'] = "No inventory entries found for the PO number '" . htmlspecialchars($po_number, ENT_QUOTES) . "'.";
 		}
 
-		// Return the user type along with filtered entries
+		// Return the response
 		return json_encode($resp);
 	}
+
 
 	public function get_purchase_price_by_product_name($product_name)
 	{
@@ -1165,94 +1161,90 @@ class Master extends DBConnection
 		if (session_status() === PHP_SESSION_NONE) {
 			session_start(); // Start session if not already active
 		}
-	
+
 		header('Content-Type: application/json');
-	
-		$resp = ['status' => 'failed', 'msg' => 'An unexpected error occurred.'];
-	
+
+		// Initialize response array
+		$resp = array('status' => 'failed', 'msg' => 'An unexpected error occurred.');
+
 		// Decode JSON input
 		$input_data = json_decode(file_get_contents('php://input'), true);
-	
-		$product_ids = $input_data['product_ids'] ?? null; // Array of product IDs
-		$remarks = $input_data['remarks'] ?? null;
-	
+
+		// Retrieve product IDs and remarks from input data
+		$product_ids = isset($input_data['product_ids']) ? $input_data['product_ids'] : null;
+		$remarks = isset($input_data['remarks']) ? $input_data['remarks'] : null;
+
 		// Validate input data
 		if (is_null($product_ids) || !is_array($product_ids) || empty($product_ids)) {
 			$resp['msg'] = "Invalid request. Missing or invalid product IDs.";
 			echo json_encode($resp);
 			return;
 		}
-	
-		if (is_null($remarks) || !in_array($remarks, [0, 1])) {
+
+		if (is_null($remarks) || !in_array($remarks, array(0, 1))) {
 			$resp['msg'] = "Invalid remarks value. Allowed values are 0 (Pending) or 1 (Approved).";
 			echo json_encode($resp);
 			return;
 		}
-	
+
 		// Convert 0 and 1 to human-readable values
-		$remarks_text = ($remarks === 1) ? 'Approved' : 'Pending';
-	
+		$remarks_text = ($remarks == 1) ? 'Approved' : 'Pending';
+
 		// Sanitize and cast product IDs to integers
 		$sanitized_product_ids = array_map('intval', $product_ids);
-	
-		// Ensure there's at least one valid product ID
+
 		if (count($sanitized_product_ids) === 0) {
 			$resp['msg'] = "No valid product IDs provided.";
 			echo json_encode($resp);
 			return;
 		}
-	
-		// Build the placeholders for the IN clause based on the product IDs
+
+		// Build placeholders for the IN clause
 		$placeholders = implode(',', array_fill(0, count($sanitized_product_ids), '?'));
-	
-		// Check current remarks for selected products
+
+		// Query to check current remarks
 		$check_sql = "SELECT `remarks` FROM `products` WHERE `id` IN ($placeholders)";
 		$stmt = $this->conn->prepare($check_sql);
-		
+
 		if (!$stmt) {
 			$resp['msg'] = "Failed to prepare the check query.";
 			$resp['error'] = $this->conn->error;
 			echo json_encode($resp);
 			return;
 		}
-	
-		// Bind product IDs to the query
-		$stmt->bind_param(str_repeat('i', count($sanitized_product_ids)), ...$sanitized_product_ids);
+
+		// Bind product IDs
+		call_user_func_array(array($stmt, 'bind_param'), $this->refValues(array_merge(array(str_repeat('i', count($sanitized_product_ids))), $sanitized_product_ids)));
 		$stmt->execute();
 		$result = $stmt->get_result();
-		
-		$current_remarks = [];
+
+		$current_remarks = array();
 		while ($row = $result->fetch_assoc()) {
 			$current_remarks[] = $row['remarks'];
 		}
-	
-		// Check if all selected products have the same remarks as the target
-		if (count(array_unique($current_remarks)) === 1 && $current_remarks[0] === $remarks) {
+
+		// Check if all products already have the target remarks
+		if (count(array_unique($current_remarks)) === 1 && $current_remarks[0] == $remarks) {
 			$resp['status'] = 'warning';
 			$resp['msg'] = "All selected products are already marked as '{$remarks_text}' and no update was made.";
 			echo json_encode($resp);
 			return;
 		}
-	
-		// Update remarks for selected products
-		$update_sql = "UPDATE `products` 
-					   SET `remarks` = ? 
-					   WHERE `id` IN ($placeholders)";
+
+		// Query to update remarks
+		$update_sql = "UPDATE `products` SET `remarks` = ? WHERE `id` IN ($placeholders)";
 		$stmt = $this->conn->prepare($update_sql);
-	
+
 		if (!$stmt) {
 			$resp['msg'] = "Failed to prepare the update query.";
 			$resp['error'] = $this->conn->error;
 			echo json_encode($resp);
 			return;
 		}
-	
-		// Prepare parameters for the update query (remarks followed by product IDs)
-		$params = array_merge([$remarks], $sanitized_product_ids);
-	
-		// Bind the remarks (as integer) and the product IDs (as integers)
-		$stmt->bind_param(str_repeat('i', 1) . str_repeat('i', count($sanitized_product_ids)), ...$params);
-	
+
+		// Bind the remarks and product IDs
+		call_user_func_array(array($stmt, 'bind_param'), $this->refValues(array_merge(array('i' . str_repeat('i', count($sanitized_product_ids))), array_merge(array($remarks), $sanitized_product_ids))));
+
 		if ($stmt->execute()) {
 			if ($stmt->affected_rows > 0) {
 				$resp['status'] = 'success';
@@ -1264,93 +1256,109 @@ class Master extends DBConnection
 			$resp['msg'] = "Failed to update product remarks.";
 			$resp['error'] = $this->conn->error;
 		}
-	
+
 		$stmt->close();
-	
+
 		echo json_encode($resp);
 	}
-	
-	
+
+	// Helper function to handle references for bind_param in PHP 5
+	private function refValues($arr)
+	{
+		if (strnatcmp(phpversion(), '5.3') >= 0) {
+			$refs = array();
+			foreach ($arr as $key => $value) {
+				$refs[$key] = &$arr[$key];
+			}
+			return $refs;
+		}
+		return $arr;
+	}
+
+
 
 	public function update_sales_status()
 	{
 		if (session_status() === PHP_SESSION_NONE) {
 			session_start(); // Start session if not already active
 		}
-
+	
 		header('Content-Type: application/json');
-
-		$resp = ['status' => 'failed', 'msg' => 'An unexpected error occurred.'];
-
+	
+		$resp = array('status' => 'failed', 'msg' => 'An unexpected error occurred.');
+	
 		// Decode JSON input
 		$input_data = json_decode(file_get_contents('php://input'), true);
-
-		$sales_codes = $input_data['sales_codes'] ?? null; // Array of sales codes
-		$status = $input_data['status'] ?? null;
-
+	
+		$sales_codes = isset($input_data['sales_codes']) ? $input_data['sales_codes'] : null; // Array of sales codes
+		$status = isset($input_data['status']) ? $input_data['status'] : null;
+	
 		// Validate input data
 		if (is_null($sales_codes) || !is_array($sales_codes) || empty($sales_codes)) {
 			$resp['msg'] = "Invalid request. Missing or invalid sales codes.";
 			echo json_encode($resp);
 			return;
 		}
-
-		if (is_null($status) || !in_array($status, [1, 2])) {
+	
+		if (is_null($status) || !in_array($status, array(1, 2))) {
 			$resp['msg'] = "Invalid status value. Allowed values are 1 (APPROVED) or 2 (DENIED).";
 			echo json_encode($resp);
 			return;
 		}
-
+	
 		$status = (int)$status;
-
+	
 		// Sanitize and cast sales codes to integers
 		$sanitized_sales_codes = array_map('intval', $sales_codes);
-
+	
 		// Ensure there's at least one valid sales code
 		if (count($sanitized_sales_codes) === 0) {
 			$resp['msg'] = "No valid sales codes provided.";
 			echo json_encode($resp);
 			return;
 		}
-
+	
 		// Build the placeholders for the IN clause based on the sales codes
 		$placeholders = implode(',', array_fill(0, count($sanitized_sales_codes), '?'));
-
+	
 		// Check current statuses of selected sales entries
 		$check_sql = "SELECT `sales_code`, `status` FROM `sales` WHERE `sales_code` IN ($placeholders)";
 		$stmt = $this->conn->prepare($check_sql);
-
+	
 		if (!$stmt) {
 			$resp['msg'] = "Failed to prepare the query for status check.";
 			$resp['error'] = $this->conn->error;
 			echo json_encode($resp);
 			return;
 		}
-
-		// Bind parameters as integers for sales codes
+	
+		// Bind parameters for sales codes
+		$bind_params = array_merge(array(str_repeat('i', count($sanitized_sales_codes))), $sanitized_sales_codes);
+		// Fix: bind the parameters one by one instead of using call_user_func_array
 		$stmt->bind_param(str_repeat('i', count($sanitized_sales_codes)), ...$sanitized_sales_codes);
+	
 		$stmt->execute();
 		$check_result = $stmt->get_result();
-
+	
 		if (!$check_result || $check_result->num_rows === 0) {
 			$resp['msg'] = "No sales entries found with the provided sales codes.";
 			echo json_encode($resp);
 			return;
 		}
-
+	
 		// Determine entries already in the desired status
-		$existing_entries = [];
+		$existing_entries = array();
 		while ($row = $check_result->fetch_assoc()) {
 			if ((int)$row['status'] === $status) {
 				$existing_entries[] = $row['sales_code'];
 			}
 		}
-
+	
 		$stmt->close();
-
+	
 		// Filter out entries already updated
 		$sales_codes_to_update = array_diff($sanitized_sales_codes, $existing_entries);
-
+	
 		if (empty($sales_codes_to_update)) {
 			$statusText = $status === 1 ? 'APPROVED' : 'DENIED';
 			$resp['msg'] = "All selected entries are already marked as '{$statusText}'.";
@@ -1358,25 +1366,25 @@ class Master extends DBConnection
 			echo json_encode($resp);
 			return;
 		}
-
+	
 		// Update statuses for remaining entries
 		$update_placeholders = implode(',', array_fill(0, count($sales_codes_to_update), '?'));
 		$update_sql = "UPDATE `sales` SET `status` = ? WHERE `sales_code` IN ($update_placeholders)";
 		$stmt = $this->conn->prepare($update_sql);
-
+	
 		if (!$stmt) {
 			$resp['msg'] = "Failed to prepare the update query.";
 			$resp['error'] = $this->conn->error;
 			echo json_encode($resp);
 			return;
 		}
-
+	
 		// Prepare parameters for the update query (status followed by sales codes)
-		$params = array_merge([$status], $sales_codes_to_update);
-
-		// Bind the status (as integer) and the sales codes (as integers)
-		$stmt->bind_param(str_repeat('i', 1) . str_repeat('i', count($sales_codes_to_update)), ...$params);
-
+		$params = array_merge(array($status), $sales_codes_to_update);
+	
+		// Fix: bind the parameters one by one instead of using call_user_func_array
+		$stmt->bind_param(str_repeat('i', count($params)), ...$params);
+	
 		if ($stmt->execute()) {
 			if ($stmt->affected_rows > 0) {
 				$statusText = $status === 1 ? 'APPROVED' : 'DENIED';
@@ -1389,13 +1397,14 @@ class Master extends DBConnection
 			$resp['msg'] = "Failed to update sales entry statuses.";
 			$resp['error'] = $this->conn->error;
 		}
-
+	
 		$stmt->close();
-
+	
 		echo json_encode($resp);
 		error_log("Check SQL: " . $check_sql);
 		error_log("Update SQL: " . $update_sql);
 	}
+	
 }
 /*
 	function save_group()

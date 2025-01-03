@@ -55,20 +55,31 @@
     }
   })
 </script>
-<footer class="main-footer text-sm">
-  <strong>Copyright © <?php echo date('Y') ?>.
-    <!-- <a href=""></a> -->
-  </strong>
-  All rights reserved.
-  <div class="float-right d-none d-sm-inline-block">
+<footer class="main-footer text-sm" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 15px;">
+  <!-- Left Section -->
+  <div style="flex: 1; text-align: left;">
+    <strong>Copyright © <?php echo date('Y'); ?>.</strong> All rights reserved.
+  </div>
+
+  <!-- Center Section -->
+  <div style="flex: 1; text-align: center;">
     <b>
       <?php echo $_settings->info('short_name'); ?>
       (by: <a href="mailto:<?php echo $_settings->info('email'); ?>" target="_blank">
         <?php echo $_settings->info('company'); ?>
       </a>)
-    </b> TheBinaryDudesSolutions
+    </b>
+  </div>
+
+  <!-- Right Section -->
+  <div style="flex: 1; text-align: right;">
+    <a>Developed By: </a>
+    <a href="https://www.facebook.com/thebinarydudes" target="_blank">
+      TheBinaryDudesSolutions
+    </a>
   </div>
 </footer>
+
 </div>
 <!-- ./wrapper -->
 <div id="libraries">
