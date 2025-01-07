@@ -16,6 +16,17 @@ while ($row = $gl_query->fetch_assoc()) {
     $gl_codes[] = $row['code_sub_accountName'];
 }
 
+$customer_listing = [];
+$customer_query = $conn->query("SELECT id, customer FROM customer_list WHERE deleted_flag = 0");
+
+while ($row = $customer_query->fetch_assoc()) {
+    $customer_listing[] = [
+        'id' => $row['id'],
+        'customer_name' => $row['customer']
+    ];
+}
+
+
 // Fetch products and available stocks for dropdown
 $products = [];
 $product_query = $conn->query("SELECT p.*, s.available_stocks FROM `products` p 
@@ -57,55 +68,100 @@ $sales_code = $latest_code ? (intval($latest_code) + 1) : 1; // Auto-increment s
         </div>
         <div class="row">
             <div class="form-group col-md-6">
-                <label for="product_id" class="control-label">Products</label>
-                <select id="product_id" name="product_id" class="form-control form-control-sm form-control-border select2" required>
-                    <option value="" disabled selected></option>
-                    <?php foreach ($products as $product) : ?>
-                        <option value="<?= $product['id'] ?>"><?= $product['name'] ?></option>
+                <label for="customer_id" class="control-label">Customer List</label>
+                <select id="customer_id" name="customer_id" class="form-control form-control-sm form-control-border select2" required>
+                    <option value="" disabled selected>Select a Customer</option>
+                    <?php foreach ($customer_listing as $customer) : ?>
+                        <option value="<?= $customer['id'] ?>"><?= $customer['customer_name'] ?></option>
                     <?php endforeach; ?>
                 </select>
             </div>
             <div class="form-group col-md-6">
-                <label for="quantity" class="control-label">Quantity</label>
-                <input type="number" id="quantity" name="quantity" class="form-control form-control-sm form-control-border" value="<?= $quantity ?>" required min="1">
+                <label for="generate_billing" class="control-label">Generate Billing</label>
+                <br>
+                <div class="btn-group">
+                    <button type="button" class="btn btn-sm btn-danger" id="generate-billing-no" style="width: 80px;" onclick="setBillingToggle(0)">No</button>
+                    <button type="button" class="btn btn-sm btn-light" id="generate-billing-yes" style="width: 80px;" onclick="setBillingToggle(1)">Yes</button>
+                </div>
+                <input type="hidden" id="generate_billing" name="generate_billing" value="0">
             </div>
-        </div>
-        <div class="row">
-            <div class="form-group col-md-6">
-                <label for="available_stocks" class="control-label">Available Stocks</label>
-                <input type="number" id="available_stocks" name="available_stocks" class="form-control form-control-sm form-control-border" value="<?= isset($available_stocks) ? $available_stocks : '' ?>" readonly required>
-            </div>
-            <div class="form-group col-md-6">
-                <label for="selling_price" class="control-label">Price</label>
-                <input type="number" step="any" id="selling_price" name="selling_price" class="form-control form-control-sm form-control-border" value="<?= isset($selling_price) ? $selling_price : '' ?>" readonly required>
-            </div>
-        </div>
-        <div class="row">
-            <div class="col-md-12 form-group">
-                <label for="po_number" class="control-label">PO Number</label>
-                <textarea rows="2" id="po_number" name="po_number" class="form-control form-control-sm rounded-0" required><?= isset($po_number) ? htmlspecialchars($po_number, ENT_QUOTES) : "" ?></textarea>
-            </div>
-        </div>
 
-        <div class="row">
-            <div class="form-group col-md-6">
-                <label for="total_price" class="control-label">Total Price</label>
-                <input type="number" step="any" id="total_price" name="total_price" class="form-control form-control-sm form-control-border" value="<?= isset($total_price) ? $total_price : '' ?>" readonly required>
-            </div>
-            <div class="form-group col-md-6">
-                <label for="gl_code" class="control-label">GL Code</label>
-                <select id="gl_code" name="gl_code" class="form-control form-control-sm form-control-border" required>
-                    <option value="" disabled selected>Select GL Code</option>
-                    <?php foreach ($gl_codes as $code): ?>
-                        <option value="<?= $code ?>" <?= isset($gl_code) && $gl_code == $code ? 'selected' : '' ?>><?= $code ?></option>
-                    <?php endforeach; ?>
-                </select>
-            </div>
         </div>
-    </form>
+</div>
+
+<div class="row">
+    <div class="form-group col-md-6">
+        <label for="product_id" class="control-label">Products</label>
+        <select id="product_id" name="product_id" class="form-control form-control-sm form-control-border select2" required>
+            <option value="" disabled selected></option>
+            <?php foreach ($products as $product) : ?>
+                <option value="<?= $product['id'] ?>"><?= $product['name'] ?></option>
+            <?php endforeach; ?>
+        </select>
+    </div>
+    <div class="form-group col-md-6">
+        <label for="quantity" class="control-label">Quantity</label>
+        <input type="number" id="quantity" name="quantity" class="form-control form-control-sm form-control-border" value="<?= $quantity ?>" required min="1">
+    </div>
+</div>
+<div class="row">
+    <div class="form-group col-md-6">
+        <label for="available_stocks" class="control-label">Available Stocks</label>
+        <input type="number" id="available_stocks" name="available_stocks" class="form-control form-control-sm form-control-border" value="<?= isset($available_stocks) ? $available_stocks : '' ?>" readonly required>
+    </div>
+    <div class="form-group col-md-6">
+        <label for="selling_price" class="control-label">Price</label>
+        <input type="number" step="any" id="selling_price" name="selling_price" class="form-control form-control-sm form-control-border" value="<?= isset($selling_price) ? $selling_price : '' ?>" readonly required>
+    </div>
+</div>
+<div class="row">
+    <div class="col-md-12 form-group">
+        <label for="po_number" class="control-label">PO Number</label>
+        <textarea rows="2" id="po_number" name="po_number" class="form-control form-control-sm rounded-0" required><?= isset($po_number) ? htmlspecialchars($po_number, ENT_QUOTES) : "" ?></textarea>
+    </div>
+</div>
+
+<div class="row">
+    <div class="form-group col-md-6">
+        <label for="total_price" class="control-label">Total Price</label>
+        <input type="number" step="any" id="total_price" name="total_price" class="form-control form-control-sm form-control-border" value="<?= isset($total_price) ? $total_price : '' ?>" readonly required>
+    </div>
+    <div class="form-group col-md-6">
+        <label for="gl_code" class="control-label">GL Code</label>
+        <select id="gl_code" name="gl_code" class="form-control form-control-sm form-control-border" required>
+            <option value="" disabled selected>Select GL Code</option>
+            <?php foreach ($gl_codes as $code): ?>
+                <option value="<?= $code ?>" <?= isset($gl_code) && $gl_code == $code ? 'selected' : '' ?>><?= $code ?></option>
+            <?php endforeach; ?>
+        </select>
+    </div>
+</div>
+</form>
 </div>
 
 <script>
+    // JavaScript to handle toggle functionality
+    function setBillingToggle(value) {
+        // Set the hidden input field value based on the toggle state
+        document.getElementById('generate_billing').value = value;
+
+        // Update button styles based on the value of 'value'
+        if (value === 1) { // If value is 1 (Yes)
+            document.getElementById('generate-billing-yes').classList.add('btn-primary');
+            document.getElementById('generate-billing-yes').classList.remove('btn-light');
+            document.getElementById('generate-billing-no').classList.add('btn-light');
+            document.getElementById('generate-billing-no').classList.remove('btn-danger');
+        } else { // If value is 0 (No)
+            document.getElementById('generate-billing-no').classList.add('btn-danger');
+            document.getElementById('generate-billing-no').classList.remove('btn-light');
+            document.getElementById('generate-billing-yes').classList.add('btn-light');
+            document.getElementById('generate-billing-yes').classList.remove('btn-primary');
+        }
+    }
+
+    // Set default value to '0' initially (ensure 'No' is selected by default)
+    setBillingToggle(0);
+
     $(function() {
         // Initialize select2 for product dropdown
         $('#product_id').select2({
@@ -171,7 +227,9 @@ $sales_code = $latest_code ? (intval($latest_code) + 1) : 1; // Auto-increment s
                 total_price: $('#total_price').val(),
                 po_number: $('#po_number').val(), // Include PO Number
                 gl_code: $('#gl_code').val(),
-                user_id: <?= json_encode($user_id) ?> // Include user_id from PHP
+                user_id: <?= json_encode($user_id) ?>, // Include user_id from PHP
+                customer_id: $('#customer_id').val(), // Include customer listing
+                generate_billing: $('#generate_billing').val() // Correctly capture the value (0 or 1) of generate_billing
             };
 
             // AJAX request to save the sales entry

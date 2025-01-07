@@ -482,17 +482,17 @@ class Master extends DBConnection
 		if (session_status() === PHP_SESSION_NONE) {
 			session_start();
 		}
-
+	
 		// Initialize response
 		$resp = ['status' => 'failed', 'msg' => 'An unexpected error occurred.'];
-
+	
 		// Check if the request method is POST
 		if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 			$resp['msg'] = "Invalid request method.";
 			echo json_encode($resp);
 			exit;
 		}
-
+	
 		// Get input data
 		$sales_code = isset($_POST['sales_code']) ? $this->conn->real_escape_string($_POST['sales_code']) : null;
 		$po_number = isset($_POST['po_number']) ? $this->conn->real_escape_string($_POST['po_number']) : null;
@@ -502,41 +502,47 @@ class Master extends DBConnection
 		$gl_code = isset($_POST['gl_code']) ? $this->conn->real_escape_string($_POST['gl_code']) : null;
 		$selling_price = isset($_POST['selling_price']) ? (float)$this->conn->real_escape_string($_POST['selling_price']) : null;
 		$total_price = isset($_POST['total_price']) ? (float)$this->conn->real_escape_string($_POST['total_price']) : null;
-
+		$customer_listing = isset($_POST['customer_id']) ? $this->conn->real_escape_string($_POST['customer_id']) : null;
+		// Capture the value of generate_billing (0 or 1)
+		$generate_billing = isset($_POST['generate_billing']) ? (int)$_POST['generate_billing'] : 0;  // Default to 0 (No) if not set
+	
 		// Ensure all required fields are provided
-		if (empty($sales_code) || empty($gl_code)  || empty($po_number) || empty($purchase_date) || empty($product_id) || is_null($quantity) || is_null($selling_price) || is_null($total_price)) {
+		if (
+			empty($sales_code) || empty($gl_code) || empty($po_number) || empty($purchase_date) ||
+			empty($product_id) || is_null($quantity) || is_null($selling_price) || is_null($total_price) || empty($customer_listing)
+		) {
 			$resp['msg'] = "All fields are required.";
 			echo json_encode($resp);
 			exit;
 		}
-
+	
 		// Check if user ID is set in the session
 		if (!isset($_SESSION['userdata']['id'])) {
 			$resp['msg'] = "User is not logged in.";
 			echo json_encode($resp);
 			exit;
 		}
-
+	
 		// Get user ID from session safely
 		$user_id = $this->conn->real_escape_string($_SESSION['userdata']['id']);
-
+	
 		// Check for existing sale to prevent duplicates based on sales_code
 		$checkSql = "SELECT COUNT(*) as count FROM `sales` WHERE `sales_code` = '$sales_code'";
 		$checkResult = $this->conn->query($checkSql);
-
+	
 		if ($checkResult === false) {
 			$resp['msg'] = "Database error: " . $this->conn->error;
 			echo json_encode($resp);
 			exit;
 		}
-
+	
 		$row = $checkResult->fetch_assoc();
 		if ($row['count'] > 0) {
 			$resp['msg'] = "Sale with code '$sales_code' already exists.";
 			echo json_encode($resp);
 			exit;
 		}
-
+	
 		// Prepare data for insertion into sales table
 		$data = [
 			'sales_code' => $sales_code,
@@ -547,34 +553,34 @@ class Master extends DBConnection
 			'quantity' => $quantity,
 			'gl_code' => $gl_code,
 			'selling_price' => $selling_price,
-			'total_price' => $total_price
+			'total_price' => $total_price,
+			'customer_listing' => $customer_listing,
+			'generate_billing' => $generate_billing,
 		];
-
+	
 		// Prepare the SQL statement
 		$fields = implode(", ", array_keys($data));
 		$values = implode(", ", array_map(function ($value) {
 			return is_null($value) ? 'NULL' : "'$value'";
 		}, array_values($data)));
-
+	
 		$sql = "INSERT INTO `sales` ($fields) VALUES ($values)";
-
+	
 		if ($this->conn->query($sql)) {
 			// Get the last inserted ID for the sales entry
 			$id = $this->conn->insert_id;
-
+	
 			// After successful insert, update the stocks table
-			// Check if stock entry exists for this product
 			$stockCheckSql = "SELECT * FROM `stocks` WHERE `product_id` = '$product_id'";
 			$stockCheckResult = $this->conn->query($stockCheckSql);
-
+	
 			if ($stockCheckResult === false) {
 				$resp['msg'] = "Database error: " . $this->conn->error;
 				echo json_encode($resp);
 				exit;
 			}
-
+	
 			if ($stockCheckResult->num_rows > 0) {
-				// Stock entry exists, update the available_stocks
 				$stockRow = $stockCheckResult->fetch_assoc();
 				$new_stock = $stockRow['available_stocks'] - $quantity;
 				if ($new_stock < 0) {
@@ -589,15 +595,14 @@ class Master extends DBConnection
 				echo json_encode($resp);
 				exit;
 			}
-
-			// Update the `stock_reports` table with the sales ID
+	
+			// Update the `stock_reports` table
 			$insertStockReportsSql = "
 				INSERT INTO `stock_reports` (`id`, `report_datetime`, `product_id`, `stock_entries`, `available_stocks`, `stocks_sold`, `entry_type`)
 				VALUES ('$id', CURRENT_TIMESTAMP, '$product_id', 0, '$new_stock', '$quantity', 0)
 			";
-
+	
 			if ($this->conn->query($insertStockReportsSql)) {
-				// Return success response
 				$resp['status'] = 'success';
 				$resp['msg'] = "Sales entry has been successfully added, stocks updated, and new stock report entry created.";
 			} else {
@@ -607,9 +612,10 @@ class Master extends DBConnection
 			$resp['msg'] = "An error occurred during the operation.";
 			$resp['err'] = "Error: " . $this->conn->error;
 		}
-
+	
 		echo json_encode($resp);
 	}
+	
 
 
 
